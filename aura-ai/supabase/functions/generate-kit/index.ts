@@ -347,24 +347,19 @@ Deno.serve(async (req: Request) => {
     const rawText: string = claudeData.content?.[0]?.text ?? "";
     let kitJson: Record<string, unknown>;
     try {
-      // Estrategia 1: limpiar bloques markdown y parsear
-      let cleaned = rawText
-        .replace(/^[\s\S]*?```(?:json)?\s*/i, "")  // quitar todo antes del primer ```
-        .replace(/```[\s\S]*$/i, "")                 // quitar todo desde el último ```
-        .trim();
+      // Buscar directamente el primer { y el último } — ignora markdown, backticks, texto previo
+      const firstBrace = rawText.indexOf("{");
+      const lastBrace  = rawText.lastIndexOf("}");
 
-      // Estrategia 2: si no hay backticks, buscar el primer { hasta el último }
-      if (!cleaned || cleaned === rawText.trim()) {
-        const first = rawText.indexOf("{");
-        const last  = rawText.lastIndexOf("}");
-        if (first !== -1 && last !== -1) {
-          cleaned = rawText.slice(first, last + 1);
-        }
+      if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+        throw new Error("Sin objeto JSON en la respuesta");
       }
 
-      kitJson = JSON.parse(cleaned);
-    } catch {
-      console.error("[KIT] Claude no respondió con JSON válido:", rawText.slice(0, 300));
+      const extracted = rawText.slice(firstBrace, lastBrace + 1);
+      kitJson = JSON.parse(extracted);
+    } catch (parseErr) {
+      console.error("[KIT] Parse error:", String(parseErr).slice(0, 200));
+      console.error("[KIT] Raw (primeros 400 chars):", rawText.slice(0, 400));
       return json({ error: "Error al parsear respuesta de IA. Intenta nuevamente." }, 500);
     }
 
