@@ -123,7 +123,7 @@ function updateAuthUI() {
 
 async function loadCredits() {
   if (!currentUser) return;
-  const { data } = await supabase
+  const { data } = await db
     .from("profiles")
     .select("credits_kits, credits_videos, plan_type")
     .eq("id", currentUser.id)
@@ -799,7 +799,7 @@ function setupRealtimeVideos() {
   if (!currentUser) return;
   if (realtimeChannel) db.removeChannel(realtimeChannel);
 
-  realtimeChannel = supabase
+  realtimeChannel = db
     .channel(`videos-${currentUser.id}`)
     .on(
       "postgres_changes",
@@ -839,7 +839,7 @@ async function loadKitHistory() {
   document.getElementById("history-empty").classList.add("hidden");
   document.getElementById("history-list").classList.add("hidden");
 
-  const { data: kits, error } = await supabase
+  const { data: kits, error } = await db
     .from("kits")
     .select("id, niche, tone, created_at, generated_json")
     .eq("user_id", currentUser.id)
@@ -869,7 +869,7 @@ async function loadKitHistory() {
 }
 
 async function loadKitFromHistory(kitId) {
-  const { data } = await supabase
+  const { data } = await db
     .from("kits")
     .select("generated_json")
     .eq("id", kitId)
