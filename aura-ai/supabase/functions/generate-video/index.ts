@@ -97,7 +97,35 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Error al crear registro de video" }, 500);
     }
 
-    // 5. Llamar a HeyGen API v2
+    // 5. Resolver voice_id: si no viene del cliente, buscar voz en español en HeyGen
+    let resolvedVoiceId = voice_id;
+    if (!resolvedVoiceId) {
+      try {
+        const voicesRes = await fetch("https://api.heygen.com/v2/voices", {
+          headers: { "X-Api-Key": Deno.env.get("HEYGEN_API_KEY")! },
+        });
+        const voicesData = await voicesRes.json();
+        const voices: { voice_id: string; language: string; name: string }[] =
+          voicesData?.data?.voices ?? voicesData?.voices ?? [];
+        // Prioridad: español latinoam → español genérico → cualquier español
+        const esVoice =
+          voices.find(v => v.language?.toLowerCase().startsWith("es") && v.name?.toLowerCase().includes("latin")) ||
+          voices.find(v => v.language?.toLowerCase() === "es") ||
+          voices.find(v => v.language?.toLowerCase().startsWith("es"));
+        if (esVoice) {
+          resolvedVoiceId = esVoice.voice_id;
+          console.log(`[VIDEO] Voz auto-seleccionada: ${esVoice.name} (${esVoice.voice_id})`);
+        }
+      } catch (e) {
+        console.warn("[VIDEO] No se pudo obtener lista de voces de HeyGen:", e);
+      }
+    }
+
+    if (!resolvedVoiceId) {
+      return json({ error: "No se encontró voz disponible. Ve a HeyGen → Voices y pega el Voice ID." }, 400);
+    }
+
+    // 6. Llamar a HeyGen API v2
     const heygenPayload = {
       video_inputs: [
         {
@@ -109,7 +137,7 @@ Deno.serve(async (req: Request) => {
           voice: {
             type: "text",
             input_text: script_text,
-            ...(voice_id ? { voice_id } : {}),  // Si no hay voice_id, HeyGen usa la voz del avatar
+            voice_id: resolvedVoiceId,
             speed: 1.0,
           },
           background: {
