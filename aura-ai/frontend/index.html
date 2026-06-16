@@ -422,16 +422,12 @@
           <div class="mb-3">
             <label class="text-xs text-aura-muted mb-1 block">Voz del avatar</label>
             <select id="voice-id" class="input-dark w-full px-3 py-2 rounded-lg text-sm">
-              <option value="es-ES-AlvaroNeural">🇪🇸 Álvaro — Español España (masculino)</option>
-              <option value="es-ES-ElviraNeural">🇪🇸 Elvira — Español España (femenino)</option>
-              <option value="es-MX-JorgeNeural">🇲🇽 Jorge — Español México (masculino)</option>
-              <option value="es-MX-DaliaNeural">🇲🇽 Dalia — Español México (femenino)</option>
-              <option value="es-CO-GonzaloNeural">🇨🇴 Gonzalo — Español Colombia (masculino)</option>
-              <option value="es-CO-SalomeNeural">🇨🇴 Salomé — Español Colombia (femenino)</option>
-              <option value="es-AR-TomasNeural">🇦🇷 Tomás — Español Argentina (masculino)</option>
-              <option value="es-AR-ElenaNeural">🇦🇷 Elena — Español Argentina (femenino)</option>
+              <option value="">🎙️ Usar la voz del avatar (recomendado)</option>
+              <option value="" disabled>── Pega aquí el Voice ID de HeyGen ──</option>
             </select>
-            <div class="text-xs text-aura-border mt-1">Si tu avatar tiene voz propia en HeyGen, esta selección se ignora.</div>
+            <div class="text-xs text-aura-border mt-1">Para usar una voz específica: HeyGen → <strong>Voices</strong> → copia el Voice ID (UUID) y escríbelo abajo.</div>
+            <input id="voice-id-custom" type="text" placeholder="Voice ID personalizado (opcional)"
+              class="input-dark w-full px-3 py-2 rounded-lg text-sm font-mono mt-2" />
           </div>
 
           <div class="mb-4">

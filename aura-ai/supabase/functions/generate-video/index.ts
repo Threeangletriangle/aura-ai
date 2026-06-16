@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
           voice: {
             type: "text",
             input_text: script_text,
-            voice_id: voice_id ?? "es-ES-AlvaroNeural", // Voz en español por defecto
+            ...(voice_id ? { voice_id } : {}),  // Si no hay voice_id, HeyGen usa la voz del avatar
             speed: 1.0,
           },
           background: {

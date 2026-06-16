@@ -741,7 +741,7 @@ async function generateVideo() {
 
   const avatarId   = document.getElementById("avatar-id").value.trim();
   const scriptText = document.getElementById("video-script").value.trim();
-  const voiceId    = document.getElementById("voice-id").value.trim();
+  const voiceId    = document.getElementById("voice-id-custom").value.trim() || document.getElementById("voice-id").value.trim() || "";
 
   if (!avatarId || !scriptText) {
     showToast("Completa el ID del avatar y el guion", "error"); return;
