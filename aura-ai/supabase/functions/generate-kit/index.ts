@@ -8,7 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // ---- Límites de costo (techo duro: ~$0.15 por kit) ----------
 const LIMITS = {
   MAX_IMAGES: 3,
-  MAX_TOKENS_OUTPUT: 8000,
+  MAX_TOKENS_OUTPUT: 4000,
   MAX_DESCRIPTION_CHARS: 1000,
   MAX_PROMPT_CHARS: 4000,
   BUDGET_ALERT_USD: 0.12,
@@ -119,253 +119,65 @@ CRITERIOS DE CALIDAD OBLIGATORIOS:
 9. Principio "One Big Idea": todo el kit debe girar alrededor de UNA promesa central.
 10. Para infoproductos/SaaS/servicios: los bullets deben atacar la objeción de precio comparando con el costo alternativo.
 
-Genera el siguiente JSON completo:
+Genera un JSON con EXACTAMENTE estas claves. Contenido real y específico para esta oferta — nada genérico:
 
 {
-  "one_big_idea": "La promesa central única en 1 frase irresistible",
-  "product_analysis": {
-    "visual_identity": "Descripción precisa de colores, tipografía, sensación de marca y calidad percibida detectada en las imágenes",
-    "unique_value_proposition": "Qué diferencia radical tiene este producto vs todo lo demás",
-    "target_emotion": "La emoción primaria que activa la compra (libertad/seguridad/estatus/pertenencia/venganza/amor)",
-    "brand_archetype": "Arquetipo detectado: El Sabio / El Héroe / El Rebelde / El Amante / El Cuidador / El Creador"
-  },
+  "one_big_idea": "promesa central en 1 frase",
+  "product_analysis": { "visual_identity": "...", "unique_value_proposition": "...", "target_emotion": "...", "brand_archetype": "..." },
   "funnel_copy": {
-    "headline_principal": "Headline fórmula [Resultado específico] en [Tiempo] sin [Objeción principal]",
-    "subheadline": "Subheadline con beneficio emocional profundo",
-    "vsl_script_opening": "Primeros 45 segundos del VSL usando AIDA — específico para este producto",
-    "sales_page_bullets": [
-      "Descubre el [secreto]: cómo [beneficio concreto] incluso si [objeción común]",
-      "La razón por la que [problema del cliente] y cómo [solución del producto]",
-      "El método probado para [resultado deseado] sin [sacrificio que temen]",
-      "Por qué [alternativa que usan hoy] no funciona — y qué hacer en cambio",
-      "Cómo [resultado aspiracional] en solo [tiempo realista] desde [punto de partida]"
-    ],
-    "cta_primary": "CTA con verbo acción + urgencia + beneficio inmediato",
-    "cta_secondary": "CTA suave para indecisos (garantía o prueba gratuita)",
-    "thank_you_message": "Mensaje post-compra que elimina remordimiento y presenta upsell natural"
+    "headline_principal": "...", "subheadline": "...", "vsl_script_opening": "primeros 45 seg VSL...",
+    "sales_page_bullets": ["bullet 1","bullet 2","bullet 3","bullet 4","bullet 5"],
+    "cta_primary": "...", "cta_secondary": "...", "thank_you_message": "..."
   },
   "viral_hooks": {
-    "curiosity": [
-      "Hook específico del producto — primeros 3 segundos en pantalla",
-      "Hook 2 — fórmula 'Nadie te ha contado esto sobre [tema del producto]...'",
-      "Hook 3 — fórmula 'Lo que descubrí después de [situación relatable]...'"
-    ],
-    "fear_of_missing_out": [
-      "Hook FOMO 1 — activa miedo a quedarse atrás específico del nicho",
-      "Hook FOMO 2 — 'Mientras tú [acción pasiva], ellos ya están [resultado]'",
-      "Hook FOMO 3 — urgencia de tendencia o ventana de oportunidad"
-    ],
-    "social_proof": [
-      "Hook prueba social 1 — formato resultado o transformación",
-      "Hook prueba social 2 — dato o estadística del nicho",
-      "Hook prueba social 3 — formato 'De [situación inicial] a [resultado]'"
-    ],
-    "youtube_shorts_titles": [
-      "Título SEO para YouTube Shorts — keyword principal + número + beneficio",
-      "Título 2 — formato pregunta que el usuario ya se hace"
-    ],
-    "pov_format": [
-      "POV: [situación en la que el espectador se reconoce al 100%]",
-      "POV: [momento de transformación gracias al producto]"
-    ]
+    "curiosity": ["hook1","hook2","hook3"],
+    "fear_of_missing_out": ["hook1","hook2","hook3"],
+    "social_proof": ["hook1","hook2","hook3"],
+    "youtube_shorts_titles": ["titulo1","titulo2"],
+    "pov_format": ["pov1","pov2"]
   },
   "email_sequence": [
-    {
-      "day": 0,
-      "type": "Bienvenida + Quick Win",
-      "subject": "7 palabras que cambiaron mi [resultado del nicho] (te las comparto)",
-      "preview_text": "Esto funciona incluso si eres principiante completo",
-      "body_hook": "Párrafo de apertura con historia de identificación — específica al producto y audiencia",
-      "cta": "CTA concreto y de bajo compromiso"
-    },
-    {
-      "day": 1,
-      "type": "Educar + Problema",
-      "subject": "El error #1 que comete el 90% en [nicho] (y cómo evitarlo)",
-      "preview_text": "Yo también lo cometí hasta que encontré esto",
-      "body_hook": "Revela el problema profundo que el producto resuelve, usando el lenguaje exacto de la audiencia",
-      "cta": "CTA educativo que lleva al producto"
-    },
-    {
-      "day": 3,
-      "type": "Prueba Social + Historia",
-      "subject": "Cómo [persona como el lector] logró [resultado específico] en [tiempo]",
-      "preview_text": "Sin experiencia previa. Sin inversión enorme.",
-      "body_hook": "Historia de transformación real o hipotética que sea 100% relatable para la audiencia",
-      "cta": "CTA con prueba social o garantía"
-    },
-    {
-      "day": 5,
-      "type": "Oferta Principal",
-      "subject": "Todo lo que incluye [nombre del producto] (y por qué vale 10x el precio)",
-      "preview_text": "Abre antes de que cambie el precio",
-      "body_hook": "Presenta la oferta completa con todos los beneficios y derriba la objeción de precio con ROI",
-      "cta": "CTA de compra directa con urgencia real"
-    },
-    {
-      "day": 7,
-      "type": "Urgencia + Cierre",
-      "subject": "Última oportunidad (cierra en 24h)",
-      "preview_text": "No quiero que te quedes fuera",
-      "body_hook": "Recapitula el problema, la solución, la transformación posible y la consecuencia de no actuar",
-      "cta": "CTA final con escasez o fecha límite"
-    }
+    {"day":0,"type":"Bienvenida","subject":"...","preview_text":"...","body_hook":"...","cta":"..."},
+    {"day":1,"type":"Educar","subject":"...","preview_text":"...","body_hook":"...","cta":"..."},
+    {"day":3,"type":"Prueba Social","subject":"...","preview_text":"...","body_hook":"...","cta":"..."},
+    {"day":5,"type":"Oferta","subject":"...","preview_text":"...","body_hook":"...","cta":"..."},
+    {"day":7,"type":"Urgencia","subject":"...","preview_text":"...","body_hook":"...","cta":"..."}
   ],
   "social_content_pack": {
     "instagram_captions": [
-      {
-        "type": "Educativo",
-        "hook_line": "Primera línea que detiene el scroll — antes del botón 'más' de Instagram",
-        "body": "3-5 líneas de valor real con saltos de línea para legibilidad móvil",
-        "cta": "Pregunta de engagement o acción concreta",
-        "emoji_style": "moderado"
-      },
-      {
-        "type": "Viral Hook",
-        "hook_line": "Hook de curiosidad irresistible",
-        "body": "Revelación del gancho con valor inesperado",
-        "cta": "Guarda este post + compártelo",
-        "emoji_style": "abundante"
-      },
-      {
-        "type": "Prueba Social",
-        "hook_line": "Hook de transformación o resultado",
-        "body": "Historia corta de antes/después relacionada al producto",
-        "cta": "Comenta tu situación actual",
-        "emoji_style": "moderado"
-      },
-      {
-        "type": "Oferta / CTA",
-        "hook_line": "Hook de FOMO o beneficio directo",
-        "body": "Presenta el producto de forma natural, sin sonar a venta directa",
-        "cta": "Link en bio / DM para info",
-        "emoji_style": "minimalista"
-      },
-      {
-        "type": "Entretenimiento",
-        "hook_line": "Hook divertido o sorpresivo del nicho",
-        "body": "Contenido que entretiene y educa a la vez — máximo shareable",
-        "cta": "Etiqueta a alguien que necesita ver esto",
-        "emoji_style": "abundante"
-      }
+      {"type":"Educativo","hook_line":"...","body":"...","cta":"..."},
+      {"type":"Viral Hook","hook_line":"...","body":"...","cta":"..."},
+      {"type":"Prueba Social","hook_line":"...","body":"...","cta":"..."}
     ],
-    "twitter_threads": [
-      {
-        "tweet_1": "Tweet de apertura — el más importante. Hook fuerte que promete valor específico (1/7)",
-        "tweets_2_6": [
-          "Tweet 2 — Desarrolla el punto 1 con dato o insight concreto (2/7)",
-          "Tweet 3 — Punto 2 con ejemplo práctico del nicho (3/7)",
-          "Tweet 4 — Punto 3 — el más contraintuitivo del thread (4/7)",
-          "Tweet 5 — Punto 4 con aplicación inmediata (5/7)",
-          "Tweet 6 — El punto que más va a sorprender (6/7)"
-        ],
-        "tweet_cierre": "Tweet de cierre — resume el valor, CTA suave, pide RT si fue útil (7/7)"
-      }
-    ],
-    "pinterest_descriptions": [
-      "Descripción 1 — keywords naturales para búsqueda en Pinterest + beneficio del producto + CTA",
-      "Descripción 2 — enfoque en el problema que resuelve + keywords de nicho",
-      "Descripción 3 — enfoque aspiracional + hashtags relevantes de Pinterest"
-    ],
+    "twitter_threads": [{"tweet_1":"...","tweets_2_6":["t2","t3","t4","t5","t6"],"tweet_cierre":"..."}],
+    "pinterest_descriptions": ["desc1","desc2"],
     "reel_scripts": [
-      {
-        "duracion_segundos": 15,
-        "hook_visual": "Qué se ve en pantalla segundos 0-2 sin mostrar rostro (ej: manos, producto, texto animado)",
-        "hook_audio": "Texto en pantalla o voz en off exacto de los primeros 2 segundos",
-        "development": "Desarrollo compacto segundos 3-12 — una idea, un beneficio, un dato",
-        "cta_final": "CTA últimos 3 segundos — acción específica",
-        "broll_suggestions": "3 tomas de b-roll concretas sin mostrar cara"
-      },
-      {
-        "duracion_segundos": 30,
-        "hook_visual": "Toma de apertura de 30s sin rostro",
-        "hook_audio": "Hook de audio/texto en pantalla",
-        "development": "Desarrollo de 20 segundos con mini-historia o proceso",
-        "cta_final": "CTA con beneficio inmediato",
-        "broll_suggestions": "5 tomas de b-roll concretas"
-      },
-      {
-        "duracion_segundos": 60,
-        "hook_visual": "Apertura de Reel 60s sin rostro — la más impactante visualmente",
-        "hook_audio": "Hook que promete transformación en 60 segundos",
-        "development": "Tutorial o historia completa en 50 segundos — paso a paso",
-        "cta_final": "CTA fuerte con urgencia",
-        "broll_suggestions": "7 tomas de b-roll para narrar sin cara"
-      }
+      {"duracion_segundos":15,"hook_visual":"...","hook_audio":"...","development":"...","cta_final":"...","broll_suggestions":"..."},
+      {"duracion_segundos":60,"hook_visual":"...","hook_audio":"...","development":"...","cta_final":"...","broll_suggestions":"..."}
     ]
   },
   "seo_strategy": {
-    "one_big_keyword": "La keyword principal más buscada del nicho",
-    "primary_keywords": ["keyword 1", "keyword 2", "keyword 3", "keyword 4", "keyword 5"],
-    "long_tail_keywords": [
-      "frase long tail de intención de compra 1",
-      "frase long tail informacional 2",
-      "frase long tail de comparación 3"
-    ],
-    "hashtags_high_competition": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8","#tag9","#tag10"],
-    "hashtags_medium": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8","#tag9","#tag10"],
-    "hashtags_micro_niche": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8","#tag9","#tag10"]
+    "one_big_keyword": "...",
+    "primary_keywords": ["kw1","kw2","kw3","kw4","kw5"],
+    "long_tail_keywords": ["lt1","lt2","lt3"],
+    "hashtags_high_competition": ["#h1","#h2","#h3","#h4","#h5","#h6","#h7","#h8","#h9","#h10"],
+    "hashtags_medium": ["#m1","#m2","#m3","#m4","#m5","#m6","#m7","#m8","#m9","#m10"],
+    "hashtags_micro_niche": ["#n1","#n2","#n3","#n4","#n5","#n6","#n7","#n8","#n9","#n10"]
   },
   "content_calendar": {
     "semana_1": [
-      {"dia": "Lunes",    "tipo": "Educativo",      "tema": "tema concreto semana 1", "plataforma": "Instagram", "horario": "10:00am", "formato": "Carrusel 5 slides", "cta": "CTA específico"},
-      {"dia": "Martes",   "tipo": "Viral Hook",     "tema": "tema concreto",          "plataforma": "TikTok",    "horario": "8:00pm",  "formato": "Reel 15s",          "cta": "CTA"},
-      {"dia": "Miércoles","tipo": "Valor",           "tema": "tema concreto",          "plataforma": "Instagram", "horario": "7:00pm",  "formato": "Reel 30s",          "cta": "CTA"},
-      {"dia": "Jueves",   "tipo": "Comunidad",      "tema": "tema concreto",          "plataforma": "X/Twitter", "horario": "12:00pm", "formato": "Thread 7 tweets",   "cta": "CTA"},
-      {"dia": "Viernes",  "tipo": "Prueba Social",  "tema": "tema concreto",          "plataforma": "Instagram", "horario": "7:00pm",  "formato": "Post + Story",      "cta": "CTA"},
-      {"dia": "Sábado",   "tipo": "Entretenimiento","tema": "tema concreto",          "plataforma": "TikTok",    "horario": "9:00pm",  "formato": "Reel 60s",          "cta": "CTA"},
-      {"dia": "Domingo",  "tipo": "Inspiracional",  "tema": "tema concreto",          "plataforma": "Pinterest", "horario": "9:00pm",  "formato": "Pin + Descripción", "cta": "CTA"}
+      {"dia":"Lunes","tipo":"Educativo","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."},
+      {"dia":"Miércoles","tipo":"Viral","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."},
+      {"dia":"Viernes","tipo":"Prueba Social","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."}
     ],
-    "semana_2": [
-      {"dia": "Lunes",    "tipo": "Problema/Solución","tema": "tema semana 2", "plataforma": "Instagram", "horario": "10:00am", "formato": "Carrusel",    "cta": "CTA"},
-      {"dia": "Martes",   "tipo": "Tutorial",         "tema": "tema",         "plataforma": "TikTok",    "horario": "8:00pm",  "formato": "Reel 60s",    "cta": "CTA"},
-      {"dia": "Miércoles","tipo": "UGC-style",        "tema": "tema",         "plataforma": "Instagram", "horario": "7:00pm",  "formato": "Reel 30s",    "cta": "CTA"},
-      {"dia": "Jueves",   "tipo": "Dato o Estadística","tema": "tema",       "plataforma": "X/Twitter", "horario": "12:00pm", "formato": "Tweet simple","cta": "CTA"},
-      {"dia": "Viernes",  "tipo": "FOMO",             "tema": "tema",         "plataforma": "Instagram", "horario": "7:00pm",  "formato": "Story + Post","cta": "CTA"},
-      {"dia": "Sábado",   "tipo": "Detrás de escena", "tema": "tema",         "plataforma": "TikTok",    "horario": "9:00pm",  "formato": "Reel 15s",    "cta": "CTA"},
-      {"dia": "Domingo",  "tipo": "Pinterest SEO",    "tema": "tema",         "plataforma": "Pinterest", "horario": "9:00pm",  "formato": "Pin",         "cta": "CTA"}
-    ],
-    "semana_3": [
-      {"dia": "Lunes",    "tipo": "Conversión",    "tema": "tema semana 3 (enfoque en venta)", "plataforma": "Instagram", "horario": "10:00am", "formato": "Carrusel",     "cta": "CTA de compra"},
-      {"dia": "Martes",   "tipo": "Testimonio",    "tema": "tema",                             "plataforma": "TikTok",    "horario": "8:00pm",  "formato": "Reel 30s",     "cta": "CTA"},
-      {"dia": "Miércoles","tipo": "Oferta",        "tema": "tema",                             "plataforma": "Instagram", "horario": "7:00pm",  "formato": "Post + Story", "cta": "CTA venta"},
-      {"dia": "Jueves",   "tipo": "Objeciones",    "tema": "Derriba las 3 objeciones principales", "plataforma": "X/Twitter", "horario": "12:00pm", "formato": "Thread", "cta": "CTA"},
-      {"dia": "Viernes",  "tipo": "Valor Premium", "tema": "tema",                             "plataforma": "Instagram", "horario": "7:00pm",  "formato": "Reel 60s",     "cta": "CTA"},
-      {"dia": "Sábado",   "tipo": "Caso de éxito", "tema": "tema",                             "plataforma": "TikTok",    "horario": "9:00pm",  "formato": "Reel 60s",     "cta": "CTA compra"},
-      {"dia": "Domingo",  "tipo": "Inspiracional", "tema": "tema",                             "plataforma": "Pinterest", "horario": "9:00pm",  "formato": "Pin",           "cta": "CTA"}
-    ],
-    "semana_4": [
-      {"dia": "Lunes",    "tipo": "Urgencia",      "tema": "tema semana 4 (cierre)", "plataforma": "Instagram", "horario": "10:00am", "formato": "Post",         "cta": "CTA urgencia"},
-      {"dia": "Martes",   "tipo": "Recordatorio",  "tema": "tema",                   "plataforma": "TikTok",    "horario": "8:00pm",  "formato": "Reel 15s",     "cta": "CTA"},
-      {"dia": "Miércoles","tipo": "Último llamado","tema": "tema",                   "plataforma": "Instagram", "horario": "7:00pm",  "formato": "Story",        "cta": "CTA final"},
-      {"dia": "Jueves",   "tipo": "Community",     "tema": "tema",                   "plataforma": "X/Twitter", "horario": "12:00pm", "formato": "Tweet",        "cta": "CTA"},
-      {"dia": "Viernes",  "tipo": "Cierre",        "tema": "tema",                   "plataforma": "Instagram", "horario": "7:00pm",  "formato": "Post + Story", "cta": "CTA cierre"},
-      {"dia": "Sábado",   "tipo": "Celebración",   "tema": "Resultados del mes",     "plataforma": "TikTok",    "horario": "9:00pm",  "formato": "Reel 30s",     "cta": "CTA nuevo ciclo"},
-      {"dia": "Domingo",  "tipo": "Planificación", "tema": "Preview del próximo mes","plataforma": "Pinterest", "horario": "9:00pm",  "formato": "Pin",          "cta": "CTA suscripción"}
-    ]
+    "semana_2": [{"dia":"Lunes","tipo":"...","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."},{"dia":"Miércoles","tipo":"...","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."},{"dia":"Viernes","tipo":"...","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."}],
+    "semana_3": [{"dia":"Lunes","tipo":"Conversión","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."},{"dia":"Miércoles","tipo":"...","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."},{"dia":"Viernes","tipo":"...","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."}],
+    "semana_4": [{"dia":"Lunes","tipo":"Urgencia","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."},{"dia":"Miércoles","tipo":"...","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."},{"dia":"Viernes","tipo":"Cierre","tema":"...","plataforma":"...","horario":"...","formato":"...","cta":"..."}]
   },
   "trend_alerts": [
-    {
-      "plataforma": "La plataforma específica a la que aplica esta tendencia (ej: Instagram Reels, TikTok, YouTube Shorts, LinkedIn, Pinterest, Email...)",
-      "tendencia": "Describe la tendencia real que identificas para este nicho+plataforma+tipo de oferta. No nombres genéricos — describe el patrón de comportamiento concreto que está funcionando para audiencias similares a la de esta oferta.",
-      "razonamiento": "Explica brevemente por qué esta tendencia es relevante para ESTA oferta específica y ESTA audiencia específica. Conecta la tendencia con los datos del negocio.",
-      "como_aplicarla": "Instrucción táctica específica y ejecutable: qué hacer exactamente, con qué formato, con qué frecuencia, con qué ángulo de contenido.",
-      "urgencia": "alta | media | baja — basada en qué tan ventana de oportunidad es este momento para esta tendencia"
-    },
-    {
-      "plataforma": "...",
-      "tendencia": "Segunda tendencia identificada para este caso específico",
-      "razonamiento": "...",
-      "como_aplicarla": "...",
-      "urgencia": "media"
-    },
-    {
-      "plataforma": "...",
-      "tendencia": "Tercera tendencia — puede ser de copy, formato, algoritmo, comportamiento de audiencia o estética visual",
-      "razonamiento": "...",
-      "como_aplicarla": "...",
-      "urgencia": "baja"
-    }
+    {"plataforma":"...","tendencia":"...","razonamiento":"...","como_aplicarla":"...","urgencia":"alta"},
+    {"plataforma":"...","tendencia":"...","razonamiento":"...","como_aplicarla":"...","urgencia":"media"},
+    {"plataforma":"...","tendencia":"...","razonamiento":"...","como_aplicarla":"...","urgencia":"baja"}
   ]
 }`;
 }
