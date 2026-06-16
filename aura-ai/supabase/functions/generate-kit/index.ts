@@ -8,7 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // ---- Límites de costo (techo duro: ~$0.15 por kit) ----------
 const LIMITS = {
   MAX_IMAGES: 3,
-  MAX_TOKENS_OUTPUT: 4000,
+  MAX_TOKENS_OUTPUT: 5000,
   MAX_DESCRIPTION_CHARS: 1000,
   MAX_PROMPT_CHARS: 4000,
   BUDGET_ALERT_USD: 0.12,
@@ -347,11 +347,24 @@ Deno.serve(async (req: Request) => {
     const rawText: string = claudeData.content?.[0]?.text ?? "";
     let kitJson: Record<string, unknown>;
     try {
-      // Limpiar posibles bloques de código que Claude pueda agregar a pesar del prompt
-      const cleaned = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
+      // Estrategia 1: limpiar bloques markdown y parsear
+      let cleaned = rawText
+        .replace(/^[\s\S]*?```(?:json)?\s*/i, "")  // quitar todo antes del primer ```
+        .replace(/```[\s\S]*$/i, "")                 // quitar todo desde el último ```
+        .trim();
+
+      // Estrategia 2: si no hay backticks, buscar el primer { hasta el último }
+      if (!cleaned || cleaned === rawText.trim()) {
+        const first = rawText.indexOf("{");
+        const last  = rawText.lastIndexOf("}");
+        if (first !== -1 && last !== -1) {
+          cleaned = rawText.slice(first, last + 1);
+        }
+      }
+
       kitJson = JSON.parse(cleaned);
     } catch {
-      console.error("[KIT] Claude no respondió con JSON válido:", rawText.slice(0, 500));
+      console.error("[KIT] Claude no respondió con JSON válido:", rawText.slice(0, 300));
       return json({ error: "Error al parsear respuesta de IA. Intenta nuevamente." }, 500);
     }
 
