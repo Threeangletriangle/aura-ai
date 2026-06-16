@@ -1,0 +1,32 @@
+# Variables de entorno — NUNCA subir al repo
+.env
+.env.local
+.env.production
+*.env
+
+# Supabase local
+supabase/.temp/
+supabase/functions/.deno/
+
+# Node
+node_modules/
+.npm/
+
+# Next.js (proyecto polla-mundialista existente)
+polla-mundialista/.next/
+polla-mundialista/node_modules/
+polla-mundialista/.env*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+*.swp
+*.swo
+
+# Build
+dist/
+build/

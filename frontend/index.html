@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura AI — Crea tu imperio digital sin mostrar tu rostro</title>
+  <meta name="description" content="Genera kits de marketing digital completos y videos con avatar IA a partir de tu producto real. Análisis visual con IA." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- jsPDF para exportar kits como PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'aura-bg':      '#0a0a0a',
+            'aura-card':    '#111111',
+            'aura-border':  '#222222',
+            'aura-text':    '#FFFFFF',
+            'aura-muted':   '#9CA3AF',
+            'aura-gold':    '#f97316',
+            'aura-gold-dim':'#ea580c',
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <!-- Supabase JS SDK CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body { background-color: #0a0a0a; color: #FFFFFF; }
+
+    /* Scrollbar oscura */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111111; }
+    ::-webkit-scrollbar-thumb { background: #333333; border-radius: 3px; }
+
+    /* Drag & Drop Zone */
+    #drop-zone {
+      border: 2px dashed #f97316;
+      transition: all 0.2s;
+    }
+    #drop-zone.drag-over {
+      background-color: rgba(249, 115, 22, 0.08);
+      border-color: #fb923c;
+    }
+
+    /* Tab activo */
+    .tab-btn.active {
+      color: #f97316;
+      border-bottom: 2px solid #f97316;
+    }
+
+    /* Secciones del kit colapsables */
+    .kit-section-content { display: none; }
+    .kit-section-content.open { display: block; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.8s linear infinite; }
+
+    /* Pulse del logo */
+    @keyframes pulse-orange {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .pulse-gold { animation: pulse-orange 2s ease-in-out infinite; }
+
+    /* Fade in para el resultado */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+
+    /* Botón naranja fuego */
+    .btn-gold {
+      background: linear-gradient(135deg, #f97316, #dc2626);
+      color: #ffffff;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .btn-gold:hover:not(:disabled) {
+      background: linear-gradient(135deg, #fb923c, #ef4444);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 24px rgba(249,115,22,0.4);
+    }
+    .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Input estilo oscuro */
+    .input-dark {
+      background: #111111;
+      border: 1px solid #222222;
+      color: #FFFFFF;
+      transition: border-color 0.2s;
+    }
+    .input-dark:focus {
+      outline: none;
+      border-color: #f97316;
+    }
+    .input-dark::placeholder { color: #555; }
+
+    /* Imagen preview */
+    .img-preview { position: relative; }
+    .img-preview button {
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(0,0,0,0.7); border: none;
+      color: white; border-radius: 50%; width: 22px; height: 22px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans">
+
+  <!-- ======= HEADER ======= -->
+  <header class="border-b border-aura-border sticky top-0 z-50" style="background:rgba(10,10,10,0.96);backdrop-filter:blur(10px);">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Logo SVG -->
+        <div class="w-8 h-8 rounded-full flex items-center justify-center pulse-gold" style="background:linear-gradient(135deg,#f97316,#dc2626);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-aura-gold font-bold text-lg leading-none">Aura AI</div>
+          <div class="text-aura-muted text-xs">Crea tu imperio digital sin mostrar tu rostro</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="credits-display" class="text-xs text-aura-muted hidden">
+          <span id="credits-kits-count" class="text-aura-gold font-bold">–</span> kits ·
+          <span id="credits-videos-count" class="text-aura-gold font-bold">–</span> videos
+        </div>
+        <div id="user-menu" class="hidden">
+          <span id="user-email" class="text-xs text-aura-muted mr-2"></span>
+          <button onclick="handleLogout()" class="text-xs text-aura-muted hover:text-aura-text border border-aura-border px-2 py-1 rounded">
+            Salir
+          </button>
+        </div>
+        <div id="auth-buttons" class="flex gap-2">
+          <button onclick="showAuthModal('login')" class="text-xs text-aura-text border border-aura-border px-3 py-1.5 rounded hover:border-aura-gold transition-colors">
+            Iniciar sesión
+          </button>
+          <button onclick="showAuthModal('signup')" class="btn-gold text-xs px-3 py-1.5 rounded">
+            Empezar gratis
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======= HERO ======= -->
+  <div id="hero-section" class="text-center py-12 px-4 border-b border-aura-border">
+    <div class="inline-block border text-xs px-3 py-1 rounded-full mb-4 font-semibold" style="background:rgba(249,115,22,0.12);border-color:rgba(249,115,22,0.4);color:#f97316;">
+      🔥 Análisis visual con IA · Kit completo en segundos
+    </div>
+    <h1 class="text-3xl md:text-4xl font-black text-aura-text mb-3">
+      Tu Kit de Lanzamiento Digital,<br/>
+      <span class="text-aura-gold">en menos de 60 segundos</span>
+    </h1>
+    <p class="text-aura-muted max-w-xl mx-auto text-sm mb-6">
+      Sube fotos de tu producto. Aura AI lo analiza visualmente con Claude y genera el kit completo:
+      copy de ventas, hooks virales, emails, guiones de Reels, calendario de 30 días y más.
+    </p>
+    <div class="flex justify-center gap-6 text-xs text-aura-muted">
+      <div class="flex items-center gap-1.5"><span class="text-aura-gold">✓</span> Sin mostrar tu rostro</div>
+      <div class="flex items-center gap-1.5"><span class="text-aura-gold">✓</span> 7 módulos de marketing</div>
+      <div class="flex items-center gap-1.5"><span class="text-aura-gold">✓</span> Listo para publicar hoy</div>
+    </div>
+  </div>
+
+  <!-- ======= TABS ======= -->
+  <div class="max-w-5xl mx-auto px-4">
+    <div class="flex border-b border-aura-border mt-6 mb-6">
+      <button class="tab-btn active px-4 py-3 text-sm font-medium transition-colors text-aura-muted" data-tab="kit" onclick="switchTab('kit', this)">
+        ✨ Kit de Lanzamiento
+      </button>
+      <button class="tab-btn px-4 py-3 text-sm font-medium transition-colors text-aura-muted" data-tab="video" onclick="switchTab('video', this)">
+        🎬 Avatar de Ventas
+      </button>
+      <button class="tab-btn px-4 py-3 text-sm font-medium transition-colors text-aura-muted" data-tab="history" onclick="switchTab('history', this)">
+        📂 Mis Kits
+      </button>
+    </div>
+
+    <!-- ===== TAB 1: KIT DE LANZAMIENTO ===== -->
+    <div id="tab-kit" class="tab-content">
+      <div class="grid md:grid-cols-2 gap-6">
+
+        <!-- Columna izquierda: formulario -->
+        <div class="space-y-5">
+
+          <!-- Sección producto -->
+          <div class="bg-aura-card border border-aura-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-aura-gold mb-4">📦 Tu Producto</h2>
+
+            <div class="mb-3">
+              <label class="text-xs text-aura-muted mb-1 block">Nombre del producto *</label>
+              <input id="product-name" type="text" placeholder="Ej: Serum Vitamina C Glow"
+                class="input-dark w-full px-3 py-2 rounded-lg text-sm" maxlength="100" />
+            </div>
+
+            <div class="mb-4">
+              <label class="text-xs text-aura-muted mb-1 block">¿Qué hace tu producto? * <span class="text-aura-border">(máx 1000 caracteres)</span></label>
+              <textarea id="product-description" rows="3" maxlength="1000"
+                placeholder="Describe qué hace, sus ingredientes/características, para quién es y qué problema resuelve..."
+                class="input-dark w-full px-3 py-2 rounded-lg text-sm resize-none"></textarea>
+              <div class="text-right text-xs text-aura-border mt-0.5">
+                <span id="desc-count">0</span>/1000
+              </div>
+            </div>
+
+            <!-- Drag & Drop -->
+            <label class="text-xs text-aura-muted mb-2 block">
+              Fotos del producto <span class="text-aura-border">(máx 3 imágenes · JPG/PNG/WEBP · 5MB c/u)</span>
+            </label>
+            <div id="drop-zone" class="rounded-xl p-6 text-center cursor-pointer"
+              onclick="document.getElementById('file-input').click()"
+              ondragover="handleDragOver(event)"
+              ondragleave="handleDragLeave(event)"
+              ondrop="handleDrop(event)">
+              <div class="text-3xl mb-2">📸</div>
+              <div class="text-sm text-aura-muted">Arrastra tus fotos aquí o <span class="text-aura-gold underline">haz clic para seleccionar</span></div>
+              <div class="text-xs text-aura-border mt-1">Aura AI analizará empaque, colores y diseño visualmente</div>
+            </div>
+            <input id="file-input" type="file" accept="image/*" multiple class="hidden" onchange="handleFileSelect(event)" />
+
+            <!-- Previews de imágenes -->
+            <div id="image-previews" class="flex gap-2 mt-3 flex-wrap"></div>
+          </div>
+
+          <!-- Sección segmentación -->
+          <div class="bg-aura-card border border-aura-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-aura-gold mb-4">🎯 Segmentación</h2>
+
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-xs text-aura-muted mb-1 block">Nicho *</label>
+                <input id="kit-niche" type="text" placeholder="Ej: Skincare natural"
+                  class="input-dark w-full px-3 py-2 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label class="text-xs text-aura-muted mb-1 block">Audiencia objetivo *</label>
+                <input id="kit-audience" type="text" placeholder="Ej: Mujeres 25-40 LATAM"
+                  class="input-dark w-full px-3 py-2 rounded-lg text-sm" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-xs text-aura-muted mb-1 block">Tono de marca *</label>
+                <select id="kit-tone" class="input-dark w-full px-3 py-2 rounded-lg text-sm">
+                  <option value="profesional y elegante">Profesional y elegante</option>
+                  <option value="cercano y empático">Cercano y empático</option>
+                  <option value="audaz y directo">Audaz y directo</option>
+                  <option value="inspiracional y motivador">Inspiracional y motivador</option>
+                  <option value="educativo y experto">Educativo y experto</option>
+                  <option value="divertido y dinámico">Divertido y dinámico</option>
+                  <option value="lujo y exclusividad">Lujo y exclusividad</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-aura-muted mb-1 block">Plataforma principal *</label>
+                <select id="kit-platform" class="input-dark w-full px-3 py-2 rounded-lg text-sm">
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="pinterest">Pinterest</option>
+                  <option value="todas">Todas las plataformas</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-xs text-aura-muted mb-1 block">Objetivo principal *</label>
+              <select id="kit-goal" class="input-dark w-full px-3 py-2 rounded-lg text-sm">
+                <option value="vender el producto directamente">Vender el producto directamente</option>
+                <option value="generar leads y lista de email">Generar leads y lista de email</option>
+                <option value="construir marca personal">Construir marca personal</option>
+                <option value="lanzar un infoproducto">Lanzar un infoproducto</option>
+                <option value="crecer seguidores y comunidad">Crecer seguidores y comunidad</option>
+                <option value="posicionar como experto del nicho">Posicionar como experto del nicho</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Botón generar -->
+          <button id="btn-generate-kit" onclick="generateKit()"
+            class="btn-gold w-full py-4 rounded-xl text-base">
+            ✨ Generar Kit Completo
+          </button>
+
+          <!-- Estado de carga -->
+          <div id="kit-loading" class="hidden bg-aura-card border border-aura-border rounded-xl p-5 text-center">
+            <div class="flex justify-center mb-3">
+              <div class="spinner w-8 h-8 border-2 border-aura-border border-t-aura-gold rounded-full"></div>
+            </div>
+            <div id="loading-message" class="text-sm text-aura-gold font-medium"></div>
+            <div class="text-xs text-aura-muted mt-1">Esto puede tardar 10-20 segundos</div>
+          </div>
+
+          <!-- Mensaje de error -->
+          <div id="kit-error" class="hidden bg-red-900/20 border border-red-800 rounded-xl p-4">
+            <div class="text-red-400 text-sm font-medium mb-1">Error al generar kit</div>
+            <div id="kit-error-msg" class="text-xs text-red-300/70"></div>
+          </div>
+        </div>
+
+        <!-- Columna derecha: resultado del kit -->
+        <div id="kit-result" class="hidden space-y-3 fade-in-up">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-bold text-aura-text">Tu Kit de Lanzamiento</h2>
+            <div class="flex gap-2">
+              <button onclick="downloadKit()" class="text-xs text-aura-gold border border-aura-gold/30 px-3 py-1 rounded-lg hover:bg-aura-gold/10 transition-colors">
+                ⬇️ JSON
+              </button>
+              <button onclick="exportPDF()" class="text-xs text-aura-gold border border-aura-gold/30 px-3 py-1 rounded-lg hover:bg-aura-gold/10 transition-colors">
+                📄 PDF
+              </button>
+            </div>
+          </div>
+
+          <!-- One Big Idea -->
+          <div class="bg-aura-gold/10 border border-aura-gold/30 rounded-xl p-4">
+            <div class="text-xs text-aura-gold font-bold mb-1">⭐ LA GRAN IDEA</div>
+            <div id="kit-one-big-idea" class="text-sm font-semibold text-aura-text"></div>
+          </div>
+
+          <!-- Secciones dinámicas del kit -->
+          <div id="kit-sections"></div>
+
+          <!-- Meta info del costo -->
+          <div id="kit-meta" class="bg-aura-card border border-aura-border rounded-xl p-3 flex gap-4 text-xs text-aura-muted">
+            <span>🪙 Tokens: <span id="meta-tokens" class="text-aura-text">–</span></span>
+            <span>💰 Costo: <span id="meta-cost" class="text-aura-text">–</span></span>
+            <span>🖼️ Imágenes: <span id="meta-images" class="text-aura-text">–</span></span>
+          </div>
+        </div>
+
+        <!-- Placeholder cuando no hay kit -->
+        <div id="kit-placeholder" class="flex items-center justify-center h-64 border border-dashed border-aura-border rounded-xl text-center">
+          <div>
+            <div class="text-4xl mb-3">🎯</div>
+            <div class="text-sm text-aura-muted">Tu kit aparecerá aquí</div>
+            <div class="text-xs text-aura-border mt-1">Completa el formulario y haz clic en Generar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 2: AVATAR DE VENTAS ===== -->
+    <div id="tab-video" class="tab-content hidden">
+      <div class="max-w-xl mx-auto space-y-5">
+
+        <div class="bg-aura-card border border-aura-border rounded-xl p-5">
+          <h2 class="text-sm font-bold text-aura-gold mb-4">🎬 Crear Video con Avatar IA</h2>
+
+          <div class="mb-3">
+            <label class="text-xs text-aura-muted mb-1 block">ID del Avatar de HeyGen *</label>
+            <input id="avatar-id" type="text" placeholder="Ej: Anna_public_3_20240108"
+              class="input-dark w-full px-3 py-2 rounded-lg text-sm font-mono" />
+            <div class="text-xs text-aura-border mt-1">Encuéntralo en tu cuenta de HeyGen → Avatar Library</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="text-xs text-aura-muted mb-1 block">ID de Voz (opcional)</label>
+            <input id="voice-id" type="text" placeholder="Ej: es-ES-AlvaroNeural (defecto: español neutro)"
+              class="input-dark w-full px-3 py-2 rounded-lg text-sm font-mono" />
+          </div>
+
+          <div class="mb-4">
+            <label class="text-xs text-aura-muted mb-1 block">Guion del video * <span class="text-aura-border">(máx 2000 caracteres)</span></label>
+            <textarea id="video-script" rows="8" maxlength="2000"
+              placeholder="Escribe aquí el guion completo del video. Puedes pegar directamente el guion generado en el Kit de Lanzamiento..."
+              class="input-dark w-full px-3 py-2 rounded-lg text-sm resize-none"></textarea>
+            <div class="text-right text-xs text-aura-border mt-0.5">
+              <span id="script-count">0</span>/2000
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="text-xs text-aura-muted mb-2 block">Formato del video *</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="flex items-center gap-3 cursor-pointer bg-aura-card border border-aura-border rounded-lg p-3 hover:border-aura-gold transition-colors has-[:checked]:border-aura-gold has-[:checked]:bg-aura-gold/10">
+                <input type="radio" name="video-orientation" value="horizontal" checked class="accent-orange-500" />
+                <div>
+                  <div class="text-xs font-bold">📺 Horizontal 16:9</div>
+                  <div class="text-xs text-aura-muted">YouTube · Facebook · $1/min</div>
+                </div>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer bg-aura-card border border-aura-border rounded-lg p-3 hover:border-aura-gold transition-colors has-[:checked]:border-aura-gold has-[:checked]:bg-aura-gold/10">
+                <input type="radio" name="video-orientation" value="vertical" class="accent-orange-500" />
+                <div>
+                  <div class="text-xs font-bold">📱 Vertical 9:16</div>
+                  <div class="text-xs text-aura-muted">Reels · TikTok · $1/min</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <button id="btn-generate-video" onclick="generateVideo()"
+            class="btn-gold w-full py-3 rounded-xl text-sm">
+            🎬 Generar Video con Avatar
+          </button>
+        </div>
+
+        <!-- Estado del video -->
+        <div id="video-status" class="hidden bg-aura-card border border-aura-border rounded-xl p-5">
+          <div id="video-processing" class="text-center">
+            <div class="flex justify-center mb-3">
+              <div class="spinner w-8 h-8 border-2 border-aura-border border-t-aura-gold rounded-full"></div>
+            </div>
+            <div class="text-sm font-medium text-aura-gold">Renderizando tu video...</div>
+            <div class="text-xs text-aura-muted mt-1">HeyGen está procesando tu avatar (2-5 minutos)</div>
+            <div class="mt-3 flex items-center justify-center gap-2">
+              <div class="w-2 h-2 bg-aura-gold rounded-full animate-pulse"></div>
+              <span class="text-xs text-aura-muted">Recibirás una notificación automática cuando esté listo</span>
+            </div>
+          </div>
+          <div id="video-completed" class="hidden text-center">
+            <div class="text-3xl mb-2">🎉</div>
+            <div class="text-sm font-bold text-aura-gold mb-3">¡Tu video está listo!</div>
+            <video id="video-player" controls class="w-full rounded-lg border border-aura-border mb-3" style="max-height:280px;"></video>
+            <a id="video-download-link" href="#" download class="btn-gold inline-block px-4 py-2 rounded-lg text-sm">
+              ⬇️ Descargar Video
+            </a>
+          </div>
+          <div id="video-failed" class="hidden text-center">
+            <div class="text-3xl mb-2">⚠️</div>
+            <div class="text-sm text-red-400">Error al generar el video. Intenta nuevamente.</div>
+          </div>
+        </div>
+
+        <!-- Info de plan -->
+        <div class="bg-aura-card border border-aura-border rounded-xl p-4 text-xs text-aura-muted">
+          <div class="font-bold text-aura-text mb-1">ℹ️ Sobre los videos</div>
+          <ul class="space-y-1">
+            <li>• Plan Free: sin videos de avatar</li>
+            <li>• Plan Creator ($29/mes): 5 videos/mes en 720p</li>
+            <li>• Plan Agency ($79/mes): 20 videos/mes en 1080p</li>
+            <li>• El video tarda 2-5 minutos en renderizar</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB 3: MIS KITS ===== -->
+    <div id="tab-history" class="tab-content hidden">
+      <div id="history-loading" class="text-center py-12">
+        <div class="spinner w-6 h-6 border-2 border-aura-border border-t-aura-gold rounded-full mx-auto mb-3"></div>
+        <div class="text-sm text-aura-muted">Cargando tus kits...</div>
+      </div>
+      <div id="history-empty" class="hidden text-center py-12">
+        <div class="text-4xl mb-3">📂</div>
+        <div class="text-sm text-aura-muted">No tienes kits generados aún</div>
+        <div class="text-xs text-aura-border mt-1">Ve a "Kit de Lanzamiento" para crear el primero</div>
+      </div>
+      <div id="history-list" class="hidden space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- padding inferior -->
+  <div class="h-16"></div>
+
+  <!-- ======= MODAL DE AUTH ======= -->
+  <div id="auth-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);">
+    <div class="bg-aura-card border border-aura-border rounded-2xl p-6 w-full max-w-sm">
+      <div class="flex items-center gap-2 mb-5">
+        <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg,#f97316,#dc2626);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#ffffff"/></svg>
+        </div>
+        <span class="text-aura-gold font-bold">Aura AI</span>
+        <button onclick="hideAuthModal()" class="ml-auto text-aura-muted hover:text-aura-text text-lg leading-none">×</button>
+      </div>
+
+      <div id="auth-login-section">
+        <h3 class="font-bold text-aura-text mb-1" id="auth-modal-title">Iniciar sesión</h3>
+        <p class="text-xs text-aura-muted mb-5" id="auth-modal-sub">Accede a tu cuenta de Aura AI</p>
+
+        <div class="mb-3">
+          <label class="text-xs text-aura-muted mb-1 block">Email</label>
+          <input id="auth-email" type="email" placeholder="tu@email.com" class="input-dark w-full px-3 py-2 rounded-lg text-sm" />
+        </div>
+        <div class="mb-4">
+          <label class="text-xs text-aura-muted mb-1 block">Contraseña</label>
+          <input id="auth-password" type="password" placeholder="••••••••" class="input-dark w-full px-3 py-2 rounded-lg text-sm"
+            onkeydown="if(event.key==='Enter') submitAuth()" />
+        </div>
+
+        <div id="auth-error" class="hidden text-xs text-red-400 mb-3 bg-red-900/20 px-3 py-2 rounded-lg"></div>
+
+        <button id="auth-submit-btn" onclick="submitAuth()" class="btn-gold w-full py-2.5 rounded-xl text-sm mb-3">
+          <span id="auth-btn-label">Iniciar sesión</span>
+        </button>
+
+        <div id="auth-toggle" class="text-center text-xs text-aura-muted">
+          ¿No tienes cuenta?
+          <button onclick="toggleAuthMode()" class="text-aura-gold underline ml-1">Regístrate gratis</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
