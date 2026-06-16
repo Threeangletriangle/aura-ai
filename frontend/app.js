@@ -13,6 +13,24 @@ const FN_GENERATE_VIDEO = `${SUPABASE_URL}/functions/v1/generate-video`;
 
 // ---- Estado global -------------------------------------------
 let supabase = null;
+let selectedOfferType = "producto_fisico";
+
+// ---- Hints por tipo de oferta --------------------------------
+const OFFER_HINTS = {
+  producto_fisico:  "📦 Sube fotos del empaque, etiqueta o producto en uso. Claude analizará colores, diseño y materiales.",
+  infoproducto:     "🎓 Sube el mockup del ebook, portada del curso o captura de la landing. Si no tienes imágenes, describe el contenido detalladamente.",
+  producto_digital: "💾 Sube capturas del software, plantilla o pack. Claude analizará la UX, interfaz y propuesta de valor visual.",
+  servicio:         "🤝 Sube tu foto de perfil profesional, logo o portafolio. Claude construirá tu autoridad y posicionamiento de experto.",
+  saas:             "⚙️ Sube capturas del dashboard, landing page o flujo de uso. Claude analizará la UX y posicionará el ROI del producto.",
+};
+
+const OFFER_LABELS = {
+  producto_fisico:  { name: "Nombre del producto", desc: "¿Qué hace? Ingredientes, materiales, resultado visible..." },
+  infoproducto:     { name: "Nombre del infoproducto", desc: "¿Qué aprende el estudiante? ¿Qué transformación logra? ¿En cuánto tiempo?" },
+  producto_digital: { name: "Nombre del producto digital", desc: "¿Qué hace? ¿Qué problema resuelve? ¿Cuánto tiempo ahorra?" },
+  servicio:         { name: "Nombre del servicio o agencia", desc: "¿Qué resultado concreto entregas? ¿En cuánto tiempo? ¿A quién?" },
+  saas:             { name: "Nombre del SaaS o app", desc: "¿Qué automatiza o resuelve? ¿Qué proceso manual elimina? ¿Cuánto tiempo ahorra?" },
+};
 let currentUser = null;
 let currentKit = null;
 let uploadedImageUrls = [];   // URLs en Supabase Storage
@@ -51,6 +69,25 @@ function setupAuthListener() {
       }
     }
   });
+}
+
+// ---- Selector de tipo de oferta ------------------------------
+function selectOfferType(btn) {
+  selectedOfferType = btn.dataset.type;
+  document.querySelectorAll(".offer-type-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  // Hint dinámico
+  const hint = document.getElementById("offer-type-hint");
+  hint.textContent = OFFER_HINTS[selectedOfferType] ?? "";
+  hint.classList.remove("hidden");
+
+  // Adaptar labels del formulario
+  const labels = OFFER_LABELS[selectedOfferType] ?? OFFER_LABELS.producto_fisico;
+  const nameLabel = document.getElementById("name-label");
+  const descArea  = document.getElementById("product-description");
+  if (nameLabel) nameLabel.textContent = labels.name + " *";
+  if (descArea)  descArea.placeholder  = labels.desc;
 }
 
 function setupCharCounters() {
@@ -329,6 +366,7 @@ async function generateKit() {
         nombre, descripcion: desc, nicho,
         target_audience: audiencia, tono,
         product_goal: objetivo, platform_focus: plataforma,
+        offer_type: selectedOfferType,
         image_urls: imageUrls,
       }),
     });
@@ -503,17 +541,31 @@ function renderKit(kit, meta) {
     {
       id: "trend_alerts",
       icon: "📡",
-      title: "Alertas de Tendencias 2025-2026",
+      title: "Tendencias Identificadas por la IA",
       render: (d) => `
-        <div class="space-y-2">
-          ${(d??[]).map(t=>`
-            <div class="border rounded-lg p-3 ${t.urgencia==='alta'?'border-aura-gold/50 bg-aura-gold/5':'border-aura-border'}">
-              <div class="flex gap-2 items-center mb-1">
-                <span class="text-xs font-bold text-aura-text">${t.tendencia}</span>
-                <span class="text-xs ml-auto px-1.5 py-0.5 rounded font-bold ${t.urgencia==='alta'?'bg-aura-gold/20 text-aura-gold':t.urgencia==='media'?'bg-blue-900/30 text-blue-400':'bg-gray-800 text-gray-400'}">${t.urgencia.toUpperCase()}</span>
+        <div class="space-y-3">
+          ${(d??[]).map(t => {
+            const urgColor = t.urgencia==='alta'
+              ? 'border-aura-gold bg-aura-gold/5'
+              : t.urgencia==='media'
+              ? 'border-blue-800 bg-blue-900/10'
+              : 'border-aura-border';
+            const badgeColor = t.urgencia==='alta'
+              ? 'bg-aura-gold/20 text-aura-gold'
+              : t.urgencia==='media'
+              ? 'bg-blue-900/30 text-blue-400'
+              : 'bg-gray-800 text-gray-400';
+            return `
+            <div class="border rounded-xl p-4 ${urgColor}">
+              <div class="flex flex-wrap gap-2 items-center mb-2">
+                ${t.plataforma ? `<span class="text-xs bg-aura-card border border-aura-border px-2 py-0.5 rounded-full text-aura-muted">📍 ${t.plataforma}</span>` : ''}
+                <span class="text-xs px-2 py-0.5 rounded-full font-bold ml-auto ${badgeColor}">${(t.urgencia??'').toUpperCase()}</span>
               </div>
-              <div class="text-xs text-aura-muted">${t.como_aplicarla}</div>
-            </div>`).join("")}
+              <div class="text-sm font-bold text-aura-text mb-1">${t.tendencia}</div>
+              ${t.razonamiento ? `<div class="text-xs text-aura-muted mb-2 italic border-l-2 border-aura-gold/30 pl-2">${t.razonamiento}</div>` : ''}
+              <div class="text-xs font-medium text-aura-gold">→ ${t.como_aplicarla}</div>
+            </div>`;
+          }).join("")}
         </div>`,
     },
   ];

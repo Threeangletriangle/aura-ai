@@ -24,7 +24,55 @@ const PLAN_CREDITS: Record<string, { kits: number; videos: number }> = {
   agency:  { kits: -1,  videos: 20 }, // -1 = ilimitado
 };
 
-// ---- Prompt Maestro de Élite ---------------------------------
+// ---- Tipos de oferta soportados ------------------------------
+type OfferType = "producto_fisico" | "infoproducto" | "producto_digital" | "servicio" | "saas";
+
+// Contexto adaptado por tipo para el análisis visual y el copy
+const OFFER_TYPE_CONTEXT: Record<OfferType, {
+  label: string;
+  visual_hint: string;
+  copy_hint: string;
+  broll_hint: string;
+  cta_hint: string;
+}> = {
+  producto_fisico: {
+    label: "Producto Físico",
+    visual_hint: "Analiza empaque, colores, tipografía, materiales percibidos, diseño de la caja o etiqueta, sensación táctil visual y presentación en las imágenes.",
+    copy_hint: "Enfócate en el resultado tangible, la experiencia sensorial y la transformación visible que produce el producto.",
+    broll_hint: "Tomas del producto en uso, unboxing, detalles del empaque, manos sosteniendo el producto, antes/después.",
+    cta_hint: "Compra ahora · Pide el tuyo · Envío gratis hoy",
+  },
+  infoproducto: {
+    label: "Infoproducto (Curso / Ebook / Template / Taller)",
+    visual_hint: "Si hay imágenes, analiza el mockup del ebook/curso, paleta de colores, tipografía usada, percepción de valor y credibilidad profesional. Si no hay imágenes, deriva la identidad visual del nombre y la descripción.",
+    copy_hint: "Enfócate en la transformación de conocimiento: el ANTES (ignorancia/frustración) vs el DESPUÉS (habilidad/resultado). Usa el lenguaje de la promesa de aprendizaje. Reduce la percepción de dificultad. El precio se justifica comparándolo con alternativas (cursos tradicionales, contratar a alguien).",
+    broll_hint: "Pantalla del curso con texto animado, mockup del ebook flotando, capturas de resultados de alumnos, timer contando resultados, manos en teclado trabajando.",
+    cta_hint: "Accede ahora · Empieza hoy · Quiero aprender esto · Descarga gratis",
+  },
+  producto_digital: {
+    label: "Producto Digital (Software / App / Plugin / Plantilla / Pack)",
+    visual_hint: "Si hay imágenes, analiza capturas de pantalla de la interfaz, UX percibida, paleta de colores del producto, sensación de modernidad y facilidad de uso. Si son plantillas/packs, analiza el diseño visual y la completitud percibida.",
+    copy_hint: "Enfócate en el ahorro de tiempo y la automatización. El cliente no compra el producto, compra horas recuperadas y problemas eliminados. Cuantifica el ahorro: '3 horas de trabajo → 3 minutos'. Reduce la fricción técnica en el copy.",
+    broll_hint: "Screen recording del producto funcionando, dashboard con métricas positivas, comparación antes/después en pantalla, temporizador acelerando, notificaciones de éxito.",
+    cta_hint: "Pruébalo gratis · Descárgalo ahora · Activa tu licencia · Empieza en 60 segundos",
+  },
+  servicio: {
+    label: "Servicio (Consultoría / Coaching / Agencia / Freelance)",
+    visual_hint: "Si hay imágenes, analiza el branding personal o de la agencia, la percepción de expertise, confianza y profesionalismo. Busca señales de autoridad. Si no hay imágenes, construye la identidad visual del experto desde la descripción.",
+    copy_hint: "Para servicios, la credibilidad es el activo más importante. El copy debe posicionar al proveedor como el experto indiscutible del nicho. Usa resultados específicos de clientes anteriores (aunque sean hipotéticos ilustrativos). Reduce el riesgo percibido con garantías. El CTA debe ser de baja fricción: una llamada, una consulta gratuita, un diagnóstico.",
+    broll_hint: "Pantalla de videollamada con cliente, dashboard con resultados de cliente, testimonios en pantalla, gráficas de crecimiento, proceso de trabajo paso a paso.",
+    cta_hint: "Agenda tu consulta · Quiero trabajar contigo · Solicita tu diagnóstico gratis · Reserva tu lugar",
+  },
+  saas: {
+    label: "SaaS (Software as a Service / Herramienta Online / Plataforma)",
+    visual_hint: "Si hay capturas o mockups, analiza la limpieza de la UI, la curva de aprendizaje percibida, las métricas que muestra el dashboard, y la sensación de potencia vs simplicidad. El diseño de un SaaS comunica la sofisticación del producto.",
+    copy_hint: "Para SaaS, el copy debe atacar el dolor del proceso manual actual ('¿Cuántas horas pierdes haciendo X a mano?'). Posiciona el SaaS como la infraestructura del negocio, no como una herramienta opcional. Usa el argumento ROI: el precio mensual vs el costo de NO usarlo. El free trial o freemium es el CTA de mayor conversión.",
+    broll_hint: "Demo del dashboard en acción, notificaciones de automatización disparándose, comparación manual vs automatizado, métricas creciendo en tiempo real, integraciones conectándose.",
+    cta_hint: "Prueba gratis 14 días · Empieza sin tarjeta · Ver demo · Activa tu cuenta",
+  },
+};
+
+// ---- Prompt Maestro de Élite — Universal por tipo de oferta --
 function buildMasterPrompt(params: {
   nombre: string;
   descripcion: string;
@@ -33,24 +81,25 @@ function buildMasterPrompt(params: {
   tono: string;
   objetivo: string;
   plataforma: string;
+  offer_type: OfferType;
 }): string {
   const desc = params.descripcion.slice(0, LIMITS.MAX_DESCRIPTION_CHARS);
+  const ctx  = OFFER_TYPE_CONTEXT[params.offer_type] ?? OFFER_TYPE_CONTEXT.producto_fisico;
+
+  const today = new Date().toLocaleDateString("es-LA", { year: "numeric", month: "long", day: "numeric" });
 
   return `Responde ÚNICAMENTE con JSON puro válido, sin texto antes ni después, sin bloques de código markdown.
 
-Eres el estratega de marketing digital más élite del mundo hispanohablante, especializado en Faceless Marketing y lanzamientos digitales virales. Combinas el rigor de Gary Halbert en copywriting directo, los frameworks de Russell Brunson para embudos de ventas (DotCom Secrets), y el dominio algorítmico de los creadores top de TikTok e Instagram Reels en 2025-2026.
+Eres el estratega de marketing digital más élite del mundo hispanohablante. Tu expertise abarca copywriting directo (Gary Halbert, Eugene Schwartz), embudos de ventas (Russell Brunson), posicionamiento (April Dunford), psicología del consumidor y el comportamiento actual de los algoritmos de las principales plataformas digitales.
 
-TENDENCIAS ACTIVAS 2025-2026 QUE DEBES APLICAR:
-- Hooks que resuelven en los primeros 3 segundos (el algoritmo penaliza swipe-away rate)
-- Formato "POV:" y "No lo vas a creer pero..." tienen 40% más retención en Reels 2026
-- Videos de 7-15 segundos dominan el alcance orgánico
-- "El error que todos cometen en [nicho]" convierte 3x más que contenido positivo
-- Subject lines de email con número impar + beneficio concreto abren 34% más
-- Historias de transformación UGC-style convierten mejor que producción pulida
-- Pinterest está en auge para productos de lifestyle y digitales en LATAM
-- Hilos X/Twitter con "Thread: Todo lo que nadie te dice sobre [tema]" se comparten masivamente
+Fecha actual: ${today}
 
-DATOS DEL PRODUCTO:
+TIPO DE OFERTA: ${ctx.label}
+INSTRUCCIÓN DE ANÁLISIS VISUAL: ${ctx.visual_hint}
+ENFOQUE DE COPY: ${ctx.copy_hint}
+CTAs DE REFERENCIA PARA ESTE TIPO: ${ctx.cta_hint}
+
+DATOS DE LA OFERTA:
 Nombre: ${params.nombre}
 Descripción: ${desc}
 Nicho: ${params.nicho}
@@ -60,13 +109,16 @@ Objetivo principal: ${params.objetivo}
 Plataforma prioritaria: ${params.plataforma}
 
 CRITERIOS DE CALIDAD OBLIGATORIOS:
-1. Cada hook debe ser específico para ESTE producto — jamás genérico
-2. El copy usa el lenguaje exacto de la audiencia objetivo (su jerga, sus miedos, sus deseos)
-3. Guiones de Reels filmables sin mostrar el rostro (voz en off + B-roll de producto)
-4. Subject lines de email que pasan filtros anti-spam de Gmail
-5. Hashtags en 3 capas: 10 alta competencia + 10 media + 10 micro-nicho
-6. Horarios de publicación con datos reales 2026: IG lunes/mié/vie 10am y 7pm LATAM, TikTok mar/jue/sáb 7-9pm, Pinterest sáb/dom 8-11pm
-7. Principio "One Big Idea": todo el kit gira alrededor de UNA promesa central
+1. NUNCA uses tendencias o datos hardcodeados. Razona las tendencias actuales desde tu conocimiento experto considerando: el nicho específico, el tipo de oferta, la plataforma prioritaria, la audiencia y el momento del mercado.
+2. En el campo "trend_alerts" del JSON debes identificar y describir las tendencias de contenido, formato, copy y algoritmo que son MÁS RELEVANTES para esta oferta específica en esta plataforma específica — no tendencias genéricas del marketing digital.
+3. Cada hook debe ser 100% específico para ESTA oferta — imposible de reutilizar en cualquier otro negocio.
+4. El copy usa el lenguaje exacto de la audiencia objetivo (su jerga, sus miedos reales, sus deseos específicos).
+5. Adapta el "B-Roll sin rostro" al tipo: ${ctx.broll_hint}
+6. Subject lines de email que pasan filtros anti-spam de Gmail.
+7. Hashtags en 3 capas: 10 alta competencia + 10 media + 10 micro-nicho, elegidos para esta audiencia y nicho.
+8. Horarios de publicación: usa tu criterio experto para la plataforma "${params.plataforma}" y la audiencia "${params.audiencia}" — no apliques horarios genéricos.
+9. Principio "One Big Idea": todo el kit debe girar alrededor de UNA promesa central.
+10. Para infoproductos/SaaS/servicios: los bullets deben atacar la objeción de precio comparando con el costo alternativo.
 
 Genera el siguiente JSON completo:
 
@@ -295,18 +347,24 @@ Genera el siguiente JSON completo:
   },
   "trend_alerts": [
     {
-      "tendencia": "Nombre de tendencia 2025-2026 directamente aplicable a este nicho y producto",
-      "como_aplicarla": "Instrucción táctica específica y ejecutable con este producto concreto",
-      "urgencia": "alta"
+      "plataforma": "La plataforma específica a la que aplica esta tendencia (ej: Instagram Reels, TikTok, YouTube Shorts, LinkedIn, Pinterest, Email...)",
+      "tendencia": "Describe la tendencia real que identificas para este nicho+plataforma+tipo de oferta. No nombres genéricos — describe el patrón de comportamiento concreto que está funcionando para audiencias similares a la de esta oferta.",
+      "razonamiento": "Explica brevemente por qué esta tendencia es relevante para ESTA oferta específica y ESTA audiencia específica. Conecta la tendencia con los datos del negocio.",
+      "como_aplicarla": "Instrucción táctica específica y ejecutable: qué hacer exactamente, con qué formato, con qué frecuencia, con qué ángulo de contenido.",
+      "urgencia": "alta | media | baja — basada en qué tan ventana de oportunidad es este momento para esta tendencia"
     },
     {
-      "tendencia": "Segunda tendencia relevante",
-      "como_aplicarla": "Instrucción específica",
+      "plataforma": "...",
+      "tendencia": "Segunda tendencia identificada para este caso específico",
+      "razonamiento": "...",
+      "como_aplicarla": "...",
       "urgencia": "media"
     },
     {
-      "tendencia": "Tercera tendencia o formato emergente",
-      "como_aplicarla": "Instrucción específica",
+      "plataforma": "...",
+      "tendencia": "Tercera tendencia — puede ser de copy, formato, algoritmo, comportamiento de audiencia o estética visual",
+      "razonamiento": "...",
+      "como_aplicarla": "...",
       "urgencia": "baja"
     }
   ]
@@ -368,8 +426,13 @@ Deno.serve(async (req: Request) => {
     const {
       nombre, descripcion, nicho, target_audience,
       tono, product_goal, platform_focus = "instagram",
+      offer_type = "producto_fisico",
       product_id, image_urls = [],
     } = body;
+
+    // Validar offer_type
+    const validOfferTypes: OfferType[] = ["producto_fisico", "infoproducto", "producto_digital", "servicio", "saas"];
+    const safeOfferType: OfferType = validOfferTypes.includes(offer_type) ? offer_type : "producto_fisico";
 
     if (!nombre || !descripcion || !nicho || !target_audience || !tono || !product_goal) {
       return json({ error: "Faltan campos requeridos: nombre, descripcion, nicho, target_audience, tono, product_goal" }, 400);
@@ -407,6 +470,7 @@ Deno.serve(async (req: Request) => {
       tono,
       objetivo: product_goal,
       plataforma: platform_focus,
+      offer_type: safeOfferType,
     });
 
     // 7. Construir bloques de contenido para Claude Vision
@@ -464,6 +528,7 @@ Deno.serve(async (req: Request) => {
         user_id: user.id,
         product_id: product_id ?? null,
         niche: nicho,
+        offer_type: safeOfferType,
         target_audience,
         tone: tono,
         product_goal,

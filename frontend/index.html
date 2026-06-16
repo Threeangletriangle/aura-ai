@@ -108,6 +108,19 @@
     }
     .input-dark::placeholder { color: #555; }
 
+    /* Selector tipo de oferta */
+    .offer-type-btn { color: #9CA3AF; }
+    .offer-type-btn.active {
+      border-color: #f97316;
+      background: rgba(249,115,22,0.12);
+      color: #f97316;
+      font-weight: 700;
+    }
+    .offer-type-btn:hover:not(.active) {
+      border-color: #444;
+      color: #fff;
+    }
+
     /* Imagen preview */
     .img-preview { position: relative; }
     .img-preview button {
@@ -202,10 +215,44 @@
 
           <!-- Sección producto -->
           <div class="bg-aura-card border border-aura-border rounded-xl p-5">
-            <h2 class="text-sm font-bold text-aura-gold mb-4">📦 Tu Producto</h2>
+            <h2 class="text-sm font-bold text-aura-gold mb-4">📦 Tu Oferta</h2>
+
+            <!-- Tipo de oferta -->
+            <div class="mb-4">
+              <label class="text-xs text-aura-muted mb-2 block">¿Qué tipo de oferta es? *</label>
+              <div class="grid grid-cols-5 gap-1.5" id="offer-type-selector">
+                <button type="button" data-type="producto_fisico"
+                  onclick="selectOfferType(this)"
+                  class="offer-type-btn active text-xs py-2 px-1 rounded-lg border border-aura-border bg-aura-card text-center transition-all leading-tight">
+                  📦<br/>Producto<br/>Físico
+                </button>
+                <button type="button" data-type="infoproducto"
+                  onclick="selectOfferType(this)"
+                  class="offer-type-btn text-xs py-2 px-1 rounded-lg border border-aura-border bg-aura-card text-center transition-all leading-tight">
+                  🎓<br/>Info-<br/>producto
+                </button>
+                <button type="button" data-type="producto_digital"
+                  onclick="selectOfferType(this)"
+                  class="offer-type-btn text-xs py-2 px-1 rounded-lg border border-aura-border bg-aura-card text-center transition-all leading-tight">
+                  💾<br/>Digital/<br/>Template
+                </button>
+                <button type="button" data-type="servicio"
+                  onclick="selectOfferType(this)"
+                  class="offer-type-btn text-xs py-2 px-1 rounded-lg border border-aura-border bg-aura-card text-center transition-all leading-tight">
+                  🤝<br/>Servicio/<br/>Agencia
+                </button>
+                <button type="button" data-type="saas"
+                  onclick="selectOfferType(this)"
+                  class="offer-type-btn text-xs py-2 px-1 rounded-lg border border-aura-border bg-aura-card text-center transition-all leading-tight">
+                  ⚙️<br/>SaaS/<br/>App
+                </button>
+              </div>
+              <!-- Hint dinámico por tipo -->
+              <div id="offer-type-hint" class="mt-2 text-xs text-aura-muted bg-aura-card border border-aura-border rounded-lg px-3 py-2 hidden"></div>
+            </div>
 
             <div class="mb-3">
-              <label class="text-xs text-aura-muted mb-1 block">Nombre del producto *</label>
+              <label class="text-xs text-aura-muted mb-1 block" id="name-label">Nombre del producto *</label>
               <input id="product-name" type="text" placeholder="Ej: Serum Vitamina C Glow"
                 class="input-dark w-full px-3 py-2 rounded-lg text-sm" maxlength="100" />
             </div>
