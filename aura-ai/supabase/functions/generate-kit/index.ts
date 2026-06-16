@@ -3,7 +3,6 @@
 // Llama a Claude Vision para generar el Kit de Lanzamiento completo
 // ============================================================
 
-import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // ---- Límites de costo (techo duro: ~$0.15 por kit) ----------
@@ -474,34 +473,52 @@ Deno.serve(async (req: Request) => {
     });
 
     // 7. Construir bloques de contenido para Claude Vision
-    const contentBlocks: Anthropic.MessageParam["content"] = [];
+    type ContentBlock = { type: "text"; text: string } | { type: "image"; source: { type: "url"; url: string } };
+    const contentBlocks: ContentBlock[] = [];
 
     // Agregar imágenes si las hay (formato URL directo)
     for (const imageUrl of limitedImages) {
       contentBlocks.push({
         type: "image",
-        source: {
-          type: "url",
-          url: imageUrl,
-        },
-      } as Anthropic.ImageBlockParam);
+        source: { type: "url", url: imageUrl },
+      });
     }
 
     // Agregar el prompt de texto
     contentBlocks.push({ type: "text", text: promptText.slice(0, LIMITS.MAX_PROMPT_CHARS + 3000) });
 
-    // 8. Llamar a Claude Sonnet 4.6
-    const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
+    // 8. Llamar a Claude Sonnet 4.6 via fetch directo (sin SDK)
+    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!apiKey) {
+      console.error("[KIT] ANTHROPIC_API_KEY no configurada");
+      return json({ error: "Configuración incompleta en el servidor" }, 500);
+    }
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: LIMITS.MAX_TOKENS_OUTPUT,
-      messages: [{ role: "user", content: contentBlocks }],
+    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: LIMITS.MAX_TOKENS_OUTPUT,
+        messages: [{ role: "user", content: contentBlocks }],
+      }),
     });
 
+    if (!claudeRes.ok) {
+      const errBody = await claudeRes.text();
+      console.error(`[KIT] Anthropic API error ${claudeRes.status}:`, errBody);
+      return json({ error: `Error al llamar a Claude: ${claudeRes.status}` }, 502);
+    }
+
+    const claudeData = await claudeRes.json();
+
     // 9. Calcular y registrar costo real
-    const inputTokens = response.usage.input_tokens;
-    const outputTokens = response.usage.output_tokens;
+    const inputTokens: number = claudeData.usage?.input_tokens ?? 0;
+    const outputTokens: number = claudeData.usage?.output_tokens ?? 0;
     const costUsd = (inputTokens * LIMITS.COST_PER_INPUT_TOKEN) + (outputTokens * LIMITS.COST_PER_OUTPUT_TOKEN);
 
     if (costUsd >= LIMITS.BUDGET_ALERT_USD) {
@@ -510,7 +527,7 @@ Deno.serve(async (req: Request) => {
     console.log(`[KIT] usuario=${user.id} input=${inputTokens} output=${outputTokens} costo=$${costUsd.toFixed(6)}`);
 
     // 10. Parsear respuesta JSON de Claude
-    const rawText = response.content[0].type === "text" ? response.content[0].text : "";
+    const rawText: string = claudeData.content?.[0]?.text ?? "";
     let kitJson: Record<string, unknown>;
     try {
       // Limpiar posibles bloques de código que Claude pueda agregar a pesar del prompt
