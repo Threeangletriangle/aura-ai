@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
     // 4. Actualizar registro en BD usando Service Role Key (acceso total)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!  // Service Role para bypasear RLS en webhook
+      Deno.env.get("SERVICE_ROLE_KEY")!  // Service Role para bypasear RLS en webhook
     );
 
     const updateData: Record<string, unknown> = { status: ourStatus };
