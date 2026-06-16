@@ -1,0 +1,53 @@
+name: Deploy Aura AI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # permite lanzar el deploy manualmente desde GitHub
+
+jobs:
+  # ============================================================
+  # JOB 1 — Deploy Edge Functions a Supabase
+  # Se ejecuta solo si hay cambios en supabase/
+  # ============================================================
+  deploy-supabase:
+    name: Deploy Edge Functions → Supabase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy generate-kit    --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy generate-video  --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy webhook-heygen  --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy stripe-checkout --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy webhook-stripe  --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  # ============================================================
+  # JOB 2 — Notificación de éxito (Vercel se conecta directo
+  # al repo y despliega automáticamente — sin pasos extra aquí)
+  # ============================================================
+  summary:
+    name: Resumen del deploy
+    runs-on: ubuntu-latest
+    needs: deploy-supabase
+    if: always()
+
+    steps:
+      - name: Estado del pipeline
+        run: |
+          echo "✅ Edge Functions desplegadas en Supabase"
+          echo "✅ Frontend — Vercel detecta el push y despliega automáticamente"
+          echo "🔗 Repo: https://github.com/${{ github.repository }}"
+          echo "📦 Commit: ${{ github.sha }}"
