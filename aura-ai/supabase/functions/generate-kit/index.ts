@@ -3,7 +3,7 @@
 // Llama a Claude Vision para generar el Kit de Lanzamiento completo
 // ============================================================
 
-import Anthropic from "npm:@anthropic-ai/sdk@0.27.0";
+import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // ---- Límites de costo (techo duro: ~$0.15 por kit) ----------
