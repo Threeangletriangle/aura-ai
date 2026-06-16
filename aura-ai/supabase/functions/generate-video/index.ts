@@ -72,12 +72,35 @@ Deno.serve(async (req: Request) => {
       orientation = "horizontal",   // "horizontal" | "vertical"
     } = body;
 
-    if (!script_text || !avatar_id) {
-      return json({ error: "Faltan campos: script_text, avatar_id" }, 400);
+    if (!script_text) {
+      return json({ error: "Falta el guion del video (script_text)" }, 400);
     }
 
     if (script_text.length > 2000) {
       return json({ error: "El guion no puede superar 2000 caracteres" }, 400);
+    }
+
+    // Resolver avatar_id: si no viene del cliente, tomar el primero disponible en HeyGen
+    let resolvedAvatarId = avatar_id;
+    if (!resolvedAvatarId) {
+      try {
+        const avatarsRes = await fetch("https://api.heygen.com/v2/avatars", {
+          headers: { "X-Api-Key": Deno.env.get("HEYGEN_API_KEY")! },
+        });
+        const avatarsData = await avatarsRes.json();
+        const avatars: { avatar_id: string; avatar_name: string }[] =
+          avatarsData?.data?.avatars ?? avatarsData?.avatars ?? [];
+        if (avatars.length > 0) {
+          resolvedAvatarId = avatars[0].avatar_id;
+          console.log(`[VIDEO] Avatar auto-seleccionado: ${avatars[0].avatar_name} (${resolvedAvatarId})`);
+        }
+      } catch (e) {
+        console.warn("[VIDEO] No se pudo obtener lista de avatares de HeyGen:", e);
+      }
+    }
+
+    if (!resolvedAvatarId) {
+      return json({ error: "No se encontró avatar disponible. Ve a HeyGen → Avatars y pega el Avatar ID." }, 400);
     }
 
     // 4. Insertar registro en BD con status=processing
@@ -131,7 +154,7 @@ Deno.serve(async (req: Request) => {
         {
           character: {
             type: "avatar",
-            avatar_id,
+            avatar_id: resolvedAvatarId,
             avatar_style: "normal",
           },
           voice: {
