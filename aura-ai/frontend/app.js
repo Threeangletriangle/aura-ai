@@ -12,7 +12,7 @@ const FN_GENERATE_KIT   = `${SUPABASE_URL}/functions/v1/generate-kit`;
 const FN_GENERATE_VIDEO = `${SUPABASE_URL}/functions/v1/generate-video`;
 
 // ---- Estado global -------------------------------------------
-let supabase = null;
+let db = null;
 let selectedOfferType = "producto_fisico";
 
 // ---- Hints por tipo de oferta --------------------------------
@@ -50,13 +50,13 @@ const LOADING_MESSAGES = [
 
 // ---- Inicialización ------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   setupAuthListener();
   setupCharCounters();
 });
 
 function setupAuthListener() {
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  db.auth.onAuthStateChange(async (event, session) => {
     currentUser = session?.user ?? null;
     updateAuthUI();
     if (currentUser) {
@@ -64,7 +64,7 @@ function setupAuthListener() {
       setupRealtimeVideos();
     } else {
       if (realtimeChannel) {
-        supabase.removeChannel(realtimeChannel);
+        db.removeChannel(realtimeChannel);
         realtimeChannel = null;
       }
     }
@@ -178,8 +178,8 @@ async function submitAuth() {
 
   const { error } =
     authMode === "login"
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+      ? await db.auth.signInWithPassword({ email, password })
+      : await db.auth.signUp({ email, password });
 
   btn.disabled = false;
   document.getElementById("auth-btn-label");
@@ -209,7 +209,7 @@ function translateAuthError(msg) {
 }
 
 async function handleLogout() {
-  await supabase.auth.signOut();
+  await db.auth.signOut();
   currentKit = null;
   document.getElementById("kit-result").classList.add("hidden");
   document.getElementById("kit-placeholder").classList.remove("hidden");
@@ -288,17 +288,17 @@ async function uploadImagesToStorage() {
     const ext  = file.name.split(".").pop();
     const path = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
-    const { error } = await supabase.storage
+    const { error } = await db.storage
       .from("product-images")
       .upload(path, file, { contentType: file.type, upsert: false });
 
     if (!error) {
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = db.storage
         .from("product-images")
         .getPublicUrl(path);
 
       // Usar signed URL si el bucket es privado
-      const { data: signed } = await supabase.storage
+      const { data: signed } = await db.storage
         .from("product-images")
         .createSignedUrl(path, 3600); // 1 hora
 
@@ -352,7 +352,7 @@ async function generateKit() {
     const imageUrls = await uploadImagesToStorage();
 
     // 2. Obtener JWT del usuario
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await db.auth.getSession();
     const jwt = session?.access_token;
 
     // 3. Llamar a la Edge Function
@@ -752,7 +752,7 @@ async function generateVideo() {
   btn.textContent = "Enviando a HeyGen...";
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await db.auth.getSession();
     const jwt = session?.access_token;
 
     const response = await fetch(FN_GENERATE_VIDEO, {
@@ -797,7 +797,7 @@ let currentVideoDbId = null;
 // ---- Supabase Realtime para actualizaciones de video ---------
 function setupRealtimeVideos() {
   if (!currentUser) return;
-  if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+  if (realtimeChannel) db.removeChannel(realtimeChannel);
 
   realtimeChannel = supabase
     .channel(`videos-${currentUser.id}`)
