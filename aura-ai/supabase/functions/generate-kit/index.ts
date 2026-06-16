@@ -299,17 +299,151 @@ Deno.serve(async (req: Request) => {
     // Agregar el prompt de texto
     contentBlocks.push({ type: "text", text: promptText.slice(0, LIMITS.MAX_PROMPT_CHARS + 3000) });
 
-    // 8. Llamar a Claude Sonnet 4.6 via fetch directo (sin SDK)
+    // 8. Llamar a Claude con Tool Use — JSON garantizado, sin parseo manual
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
       console.error("[KIT] ANTHROPIC_API_KEY no configurada");
       return json({ error: "Configuración incompleta en el servidor" }, 500);
     }
 
-    // Construir el body — si no hay imágenes mandamos solo texto
-    const messagesBody = contentBlocks.length > 0
-      ? [{ role: "user", content: contentBlocks }]
-      : [{ role: "user", content: [{ type: "text", text: promptText.slice(0, LIMITS.MAX_PROMPT_CHARS + 3000) }] }];
+    // Schema de la herramienta — Claude DEBE llamarla con datos válidos
+    const kitTool = {
+      name: "entregar_kit_marketing",
+      description: "Entrega el kit completo de marketing digital en formato estructurado",
+      input_schema: {
+        type: "object",
+        properties: {
+          one_big_idea: { type: "string", description: "Promesa central única en 1 frase irresistible" },
+          product_analysis: {
+            type: "object",
+            properties: {
+              visual_identity:          { type: "string" },
+              unique_value_proposition: { type: "string" },
+              target_emotion:           { type: "string" },
+              brand_archetype:          { type: "string" },
+            },
+            required: ["visual_identity","unique_value_proposition","target_emotion","brand_archetype"],
+          },
+          funnel_copy: {
+            type: "object",
+            properties: {
+              headline_principal:  { type: "string" },
+              subheadline:         { type: "string" },
+              vsl_script_opening:  { type: "string" },
+              sales_page_bullets:  { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
+              cta_primary:         { type: "string" },
+              cta_secondary:       { type: "string" },
+              thank_you_message:   { type: "string" },
+            },
+            required: ["headline_principal","subheadline","vsl_script_opening","sales_page_bullets","cta_primary","cta_secondary","thank_you_message"],
+          },
+          viral_hooks: {
+            type: "object",
+            properties: {
+              curiosity:             { type: "array", items: { type: "string" }, minItems: 3, maxItems: 3 },
+              fear_of_missing_out:   { type: "array", items: { type: "string" }, minItems: 3, maxItems: 3 },
+              social_proof:          { type: "array", items: { type: "string" }, minItems: 3, maxItems: 3 },
+              youtube_shorts_titles: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 2 },
+              pov_format:            { type: "array", items: { type: "string" }, minItems: 2, maxItems: 2 },
+            },
+            required: ["curiosity","fear_of_missing_out","social_proof","youtube_shorts_titles","pov_format"],
+          },
+          email_sequence: {
+            type: "array",
+            minItems: 5, maxItems: 5,
+            items: {
+              type: "object",
+              properties: {
+                day:          { type: "number" },
+                type:         { type: "string" },
+                subject:      { type: "string" },
+                preview_text: { type: "string" },
+                body_hook:    { type: "string" },
+                cta:          { type: "string" },
+              },
+              required: ["day","type","subject","preview_text","body_hook","cta"],
+            },
+          },
+          social_content_pack: {
+            type: "object",
+            properties: {
+              instagram_captions: {
+                type: "array", minItems: 3, maxItems: 3,
+                items: {
+                  type: "object",
+                  properties: { type: { type: "string" }, hook_line: { type: "string" }, body: { type: "string" }, cta: { type: "string" } },
+                  required: ["type","hook_line","body","cta"],
+                },
+              },
+              twitter_threads: {
+                type: "array", minItems: 1, maxItems: 1,
+                items: {
+                  type: "object",
+                  properties: { tweet_1: { type: "string" }, tweets_2_6: { type: "array", items: { type: "string" } }, tweet_cierre: { type: "string" } },
+                  required: ["tweet_1","tweets_2_6","tweet_cierre"],
+                },
+              },
+              pinterest_descriptions: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 2 },
+              reel_scripts: {
+                type: "array", minItems: 2, maxItems: 2,
+                items: {
+                  type: "object",
+                  properties: {
+                    duracion_segundos: { type: "number" },
+                    hook_visual:       { type: "string" },
+                    hook_audio:        { type: "string" },
+                    development:       { type: "string" },
+                    cta_final:         { type: "string" },
+                    broll_suggestions: { type: "string" },
+                  },
+                  required: ["duracion_segundos","hook_visual","hook_audio","development","cta_final","broll_suggestions"],
+                },
+              },
+            },
+            required: ["instagram_captions","twitter_threads","pinterest_descriptions","reel_scripts"],
+          },
+          seo_strategy: {
+            type: "object",
+            properties: {
+              one_big_keyword:           { type: "string" },
+              primary_keywords:          { type: "array", items: { type: "string" }, minItems: 5, maxItems: 5 },
+              long_tail_keywords:        { type: "array", items: { type: "string" }, minItems: 3, maxItems: 3 },
+              hashtags_high_competition: { type: "array", items: { type: "string" }, minItems: 10, maxItems: 10 },
+              hashtags_medium:           { type: "array", items: { type: "string" }, minItems: 10, maxItems: 10 },
+              hashtags_micro_niche:      { type: "array", items: { type: "string" }, minItems: 10, maxItems: 10 },
+            },
+            required: ["one_big_keyword","primary_keywords","long_tail_keywords","hashtags_high_competition","hashtags_medium","hashtags_micro_niche"],
+          },
+          content_calendar: {
+            type: "object",
+            properties: {
+              semana_1: { type: "array", items: { type: "object", properties: { dia: {type:"string"}, tipo: {type:"string"}, tema: {type:"string"}, plataforma: {type:"string"}, horario: {type:"string"}, formato: {type:"string"}, cta: {type:"string"} }, required: ["dia","tipo","tema","plataforma","horario","formato","cta"] } },
+              semana_2: { type: "array", items: { type: "object", properties: { dia: {type:"string"}, tipo: {type:"string"}, tema: {type:"string"}, plataforma: {type:"string"}, horario: {type:"string"}, formato: {type:"string"}, cta: {type:"string"} }, required: ["dia","tipo","tema","plataforma","horario","formato","cta"] } },
+              semana_3: { type: "array", items: { type: "object", properties: { dia: {type:"string"}, tipo: {type:"string"}, tema: {type:"string"}, plataforma: {type:"string"}, horario: {type:"string"}, formato: {type:"string"}, cta: {type:"string"} }, required: ["dia","tipo","tema","plataforma","horario","formato","cta"] } },
+              semana_4: { type: "array", items: { type: "object", properties: { dia: {type:"string"}, tipo: {type:"string"}, tema: {type:"string"}, plataforma: {type:"string"}, horario: {type:"string"}, formato: {type:"string"}, cta: {type:"string"} }, required: ["dia","tipo","tema","plataforma","horario","formato","cta"] } },
+            },
+            required: ["semana_1","semana_2","semana_3","semana_4"],
+          },
+          trend_alerts: {
+            type: "array", minItems: 3, maxItems: 3,
+            items: {
+              type: "object",
+              properties: {
+                plataforma:      { type: "string" },
+                tendencia:       { type: "string" },
+                razonamiento:    { type: "string" },
+                como_aplicarla:  { type: "string" },
+                urgencia:        { type: "string", enum: ["alta","media","baja"] },
+              },
+              required: ["plataforma","tendencia","razonamiento","como_aplicarla","urgencia"],
+            },
+          },
+        },
+        required: ["one_big_idea","product_analysis","funnel_copy","viral_hooks","email_sequence","social_content_pack","seo_strategy","content_calendar","trend_alerts"],
+      },
+    };
+
+    const userContent = contentBlocks.length > 0 ? contentBlocks : [{ type: "text", text: promptText }];
 
     const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -321,7 +455,9 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: LIMITS.MAX_TOKENS_OUTPUT,
-        messages: messagesBody,
+        tools: [kitTool],
+        tool_choice: { type: "tool", name: "entregar_kit_marketing" }, // fuerza el uso de la herramienta
+        messages: [{ role: "user", content: userContent }],
       }),
     });
 
@@ -333,35 +469,23 @@ Deno.serve(async (req: Request) => {
 
     const claudeData = await claudeRes.json();
 
-    // 9. Calcular y registrar costo real
-    const inputTokens: number = claudeData.usage?.input_tokens ?? 0;
+    // 9. Calcular costo real
+    const inputTokens: number  = claudeData.usage?.input_tokens ?? 0;
     const outputTokens: number = claudeData.usage?.output_tokens ?? 0;
     const costUsd = (inputTokens * LIMITS.COST_PER_INPUT_TOKEN) + (outputTokens * LIMITS.COST_PER_OUTPUT_TOKEN);
 
     if (costUsd >= LIMITS.BUDGET_ALERT_USD) {
-      console.warn(`[BUDGET ALERT] Kit generado con costo $${costUsd.toFixed(6)} — usuario: ${user.id}`);
+      console.warn(`[BUDGET ALERT] $${costUsd.toFixed(6)} — usuario: ${user.id}`);
     }
     console.log(`[KIT] usuario=${user.id} input=${inputTokens} output=${outputTokens} costo=$${costUsd.toFixed(6)}`);
 
-    // 10. Parsear respuesta JSON de Claude
-    const rawText: string = claudeData.content?.[0]?.text ?? "";
-    let kitJson: Record<string, unknown>;
-    try {
-      // Buscar directamente el primer { y el último } — ignora markdown, backticks, texto previo
-      const firstBrace = rawText.indexOf("{");
-      const lastBrace  = rawText.lastIndexOf("}");
-
-      if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-        throw new Error("Sin objeto JSON en la respuesta");
-      }
-
-      const extracted = rawText.slice(firstBrace, lastBrace + 1);
-      kitJson = JSON.parse(extracted);
-    } catch (parseErr) {
-      console.error("[KIT] Parse error:", String(parseErr).slice(0, 200));
-      console.error("[KIT] Raw (primeros 400 chars):", rawText.slice(0, 400));
-      return json({ error: "Error al parsear respuesta de IA. Intenta nuevamente." }, 500);
+    // 10. Extraer input de la tool_use — JSON garantizado por el schema, sin parseo manual
+    const toolBlock = claudeData.content?.find((b: { type: string }) => b.type === "tool_use");
+    if (!toolBlock?.input) {
+      console.error("[KIT] Claude no llamó la herramienta:", JSON.stringify(claudeData.content).slice(0, 300));
+      return json({ error: "La IA no devolvió el kit. Intenta nuevamente." }, 500);
     }
+    const kitJson: Record<string, unknown> = toolBlock.input;
 
     // 11. Guardar kit en la BD
     const { data: savedKit, error: kitError } = await supabase
