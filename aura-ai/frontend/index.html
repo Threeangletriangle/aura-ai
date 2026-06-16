@@ -412,22 +412,20 @@
         <div class="bg-aura-card border border-aura-border rounded-xl p-5">
           <h2 class="text-sm font-bold text-aura-gold mb-4">🎬 Crear Video con Avatar IA</h2>
 
+          <!-- Avatar selector -->
           <div class="mb-3">
-            <label class="text-xs text-aura-muted mb-1 block">ID del Avatar de HeyGen <span class="text-aura-border">(opcional)</span></label>
-            <input id="avatar-id" type="text" placeholder="Auto: usa el primer avatar de tu cuenta"
-              class="input-dark w-full px-3 py-2 rounded-lg text-sm font-mono" />
-            <div class="text-xs text-aura-border mt-1">Déjalo vacío para usar tu primer avatar automáticamente · O pega un ID desde HeyGen → Avatar Library</div>
+            <label class="text-xs text-aura-muted mb-1 block">Avatar</label>
+            <select id="avatar-id" class="input-dark w-full px-3 py-2 rounded-lg text-sm">
+              <option value="">⏳ Cargando avatares...</option>
+            </select>
           </div>
 
+          <!-- Voice selector -->
           <div class="mb-3">
-            <label class="text-xs text-aura-muted mb-1 block">Voz del avatar</label>
+            <label class="text-xs text-aura-muted mb-1 block">Voz en español</label>
             <select id="voice-id" class="input-dark w-full px-3 py-2 rounded-lg text-sm">
-              <option value="">🎙️ Usar la voz del avatar (recomendado)</option>
-              <option value="" disabled>── Pega aquí el Voice ID de HeyGen ──</option>
+              <option value="">⏳ Cargando voces...</option>
             </select>
-            <div class="text-xs text-aura-border mt-1">Para usar una voz específica: HeyGen → <strong>Voices</strong> → copia el Voice ID (UUID) y escríbelo abajo.</div>
-            <input id="voice-id-custom" type="text" placeholder="Voice ID personalizado (opcional)"
-              class="input-dark w-full px-3 py-2 rounded-lg text-sm font-mono mt-2" />
           </div>
 
           <div class="mb-4">

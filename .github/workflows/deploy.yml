@@ -29,6 +29,7 @@ jobs:
         run: |
           supabase functions deploy generate-kit    --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
           supabase functions deploy generate-video  --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase functions deploy heygen-options  --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
           supabase functions deploy webhook-heygen  --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
           supabase functions deploy stripe-checkout --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
           supabase functions deploy webhook-stripe  --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}

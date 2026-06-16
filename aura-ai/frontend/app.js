@@ -8,8 +8,9 @@ const SUPABASE_URL  = "https://fvmudkttojgheqmndwrw.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2bXVka3R0b2pnaGVxbW5kd3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MjkxMTUsImV4cCI6MjA5NzIwNTExNX0.CwWDQpObKOJUDarr0OtU2KJmw63YGktBB1cUf2g_zy0";
 
 // URLs de las Edge Functions
-const FN_GENERATE_KIT   = `${SUPABASE_URL}/functions/v1/generate-kit`;
-const FN_GENERATE_VIDEO = `${SUPABASE_URL}/functions/v1/generate-video`;
+const FN_GENERATE_KIT    = `${SUPABASE_URL}/functions/v1/generate-kit`;
+const FN_GENERATE_VIDEO  = `${SUPABASE_URL}/functions/v1/generate-video`;
+const FN_HEYGEN_OPTIONS  = `${SUPABASE_URL}/functions/v1/heygen-options`;
 
 // ---- Estado global -------------------------------------------
 let db = null;
@@ -62,6 +63,7 @@ function setupAuthListener() {
     if (currentUser) {
       await loadCredits();
       setupRealtimeVideos();
+      loadHeygenOptions();
     } else {
       if (realtimeChannel) {
         db.removeChannel(realtimeChannel);
@@ -736,12 +738,57 @@ function exportPDF() {
 // ============================================================
 // GENERAR VIDEO
 // ============================================================
+async function loadHeygenOptions() {
+  const avatarSel = document.getElementById("avatar-id");
+  const voiceSel  = document.getElementById("voice-id");
+  if (!avatarSel || !voiceSel) return;
+
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const res = await fetch(FN_HEYGEN_OPTIONS, {
+      headers: { "Authorization": `Bearer ${session?.access_token}` },
+    });
+    if (!res.ok) throw new Error("Error al cargar opciones de HeyGen");
+    const { avatars, voices } = await res.json();
+
+    // Poblar avatares
+    avatarSel.innerHTML = "";
+    if (!avatars?.length) {
+      avatarSel.innerHTML = '<option value="">Sin avatares en tu cuenta de HeyGen</option>';
+    } else {
+      avatars.forEach(a => {
+        const opt = document.createElement("option");
+        opt.value = a.id;
+        opt.textContent = a.name;
+        avatarSel.appendChild(opt);
+      });
+    }
+
+    // Poblar voces
+    voiceSel.innerHTML = "";
+    if (!voices?.length) {
+      voiceSel.innerHTML = '<option value="">Sin voces disponibles</option>';
+    } else {
+      voices.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = `${v.name}${v.gender ? " · " + v.gender : ""}${v.language ? " · " + v.language : ""}`;
+        voiceSel.appendChild(opt);
+      });
+    }
+  } catch (err) {
+    avatarSel.innerHTML = '<option value="">Error cargando avatares</option>';
+    voiceSel.innerHTML  = '<option value="">Error cargando voces</option>';
+    console.warn("[HeyGen options]", err.message);
+  }
+}
+
 async function generateVideo() {
   if (!currentUser) { showAuthModal("login"); return; }
 
   const avatarId   = document.getElementById("avatar-id").value.trim();
   const scriptText = document.getElementById("video-script").value.trim();
-  const voiceId    = document.getElementById("voice-id-custom").value.trim() || document.getElementById("voice-id").value.trim() || "";
+  const voiceId    = document.getElementById("voice-id").value.trim();
 
   if (!avatarId || !scriptText) {
     showToast("Completa el ID del avatar y el guion", "error"); return;
