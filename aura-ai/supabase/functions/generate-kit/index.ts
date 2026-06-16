@@ -494,6 +494,11 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Configuración incompleta en el servidor" }, 500);
     }
 
+    // Construir el body — si no hay imágenes mandamos solo texto
+    const messagesBody = contentBlocks.length > 0
+      ? [{ role: "user", content: contentBlocks }]
+      : [{ role: "user", content: [{ type: "text", text: promptText.slice(0, LIMITS.MAX_PROMPT_CHARS + 3000) }] }];
+
     const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -502,16 +507,16 @@ Deno.serve(async (req: Request) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: LIMITS.MAX_TOKENS_OUTPUT,
-        messages: [{ role: "user", content: contentBlocks }],
+        messages: messagesBody,
       }),
     });
 
     if (!claudeRes.ok) {
       const errBody = await claudeRes.text();
       console.error(`[KIT] Anthropic API error ${claudeRes.status}:`, errBody);
-      return json({ error: `Error al llamar a Claude: ${claudeRes.status}` }, 502);
+      return json({ error: `Error al llamar a Claude: ${claudeRes.status}`, detail: errBody }, 502);
     }
 
     const claudeData = await claudeRes.json();
