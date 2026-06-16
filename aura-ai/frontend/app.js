@@ -3,9 +3,9 @@
 // Lógica completa del frontend: Auth, Kit, Video, Historial
 // ============================================================
 
-// ---- Configuración (reemplaza con tus valores de Supabase) --
-const SUPABASE_URL  = "https://TU_PROJECT.supabase.co";
-const SUPABASE_ANON = "TU_ANON_KEY";
+// ---- Configuración Supabase --
+const SUPABASE_URL  = "https://fvmudkttojgheqmndwrw.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2bXVka3R0b2pnaGVxbW5kd3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MjkxMTUsImV4cCI6MjA5NzIwNTExNX0.CwWDQpObKOJUDarr0OtU2KJmw63YGktBB1cUf2g_zy0";
 
 // URLs de las Edge Functions
 const FN_GENERATE_KIT   = `${SUPABASE_URL}/functions/v1/generate-kit`;
