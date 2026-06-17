@@ -20,14 +20,16 @@ Deno.serve(async (req: Request) => {
   const headers = { "X-Api-Key": apiKey, "Content-Type": "application/json" };
 
   try {
-    const [avatarsRes, voicesRes] = await Promise.all([
+    const [avatarsRes, voicesRes, customVoicesRes] = await Promise.all([
       fetch("https://api.heygen.com/v2/avatars", { headers }),
       fetch("https://api.heygen.com/v2/voices", { headers }),
+      fetch("https://api.heygen.com/v2/voice/list", { headers }),
     ]);
 
-    const [avatarsData, voicesData] = await Promise.all([
+    const [avatarsData, voicesData, customVoicesData] = await Promise.all([
       avatarsRes.json(),
       voicesRes.json(),
+      customVoicesRes.ok ? customVoicesRes.json() : Promise.resolve({}),
     ]);
 
     // Avatares públicos/stock
@@ -49,23 +51,27 @@ Deno.serve(async (req: Request) => {
       preview_image: a.preview_image_url ?? null,
     }));
 
-    // Normalizar voces — priorizar español
+    // Voces stock de HeyGen
     const rawVoices: { voice_id: string; name: string; language: string; gender?: string }[] =
       voicesData?.data?.voices ?? voicesData?.voices ?? [];
 
-    const voices = rawVoices
-      .filter(v => v.language?.toLowerCase().startsWith("es") || v.name?.toLowerCase().includes("spanish"))
-      .map(v => ({
-        id: v.voice_id,
-        name: v.name ?? v.voice_id,
-        language: v.language ?? "es",
-        gender: v.gender ?? "",
-      }));
+    // Voces clonadas/personalizadas del usuario
+    const rawCustomVoices: { voice_id: string; name: string; language?: string; gender?: string }[] =
+      customVoicesData?.data?.voices ?? customVoicesData?.voices ?? [];
 
-    // Si no hay voces en español, devolver todas
-    const allVoices = voices.length > 0 ? voices : rawVoices.map(v => ({
+    // Combinar: personalizadas primero con ⭐
+    const combined = [
+      ...rawCustomVoices.map(v => ({ ...v, _custom: true })),
+      ...rawVoices.map(v => ({ ...v, _custom: false })),
+    ];
+
+    // Filtrar español (o mostrar todas si no hay)
+    const esVoices = combined.filter(v =>
+      v.language?.toLowerCase().startsWith("es") || v.name?.toLowerCase().includes("spanish")
+    );
+    const allVoices = (esVoices.length > 0 ? esVoices : combined).map(v => ({
       id: v.voice_id,
-      name: v.name ?? v.voice_id,
+      name: `${v._custom ? "⭐ " : ""}${v.name ?? v.voice_id}`,
       language: v.language ?? "",
       gender: v.gender ?? "",
     }));
