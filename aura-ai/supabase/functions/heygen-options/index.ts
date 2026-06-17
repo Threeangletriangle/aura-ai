@@ -30,13 +30,22 @@ Deno.serve(async (req: Request) => {
       voicesRes.json(),
     ]);
 
-    // Normalizar avatares
-    const rawAvatars: { avatar_id: string; avatar_name: string; preview_image_url?: string; preview_video_url?: string }[] =
+    // Avatares públicos/stock
+    const rawAvatars: { avatar_id: string; avatar_name: string; preview_image_url?: string }[] =
       avatarsData?.data?.avatars ?? avatarsData?.avatars ?? [];
 
-    const avatars = rawAvatars.map(a => ({
+    // Avatares personalizados (los que el usuario crea en HeyGen Studio)
+    const rawCustom: { avatar_id: string; avatar_name: string; preview_image_url?: string }[] =
+      avatarsData?.data?.custom_avatars ?? avatarsData?.custom_avatars ?? [];
+
+    const allRaw = [
+      ...rawCustom.map(a => ({ ...a, _type: "Mis avatares" })),
+      ...rawAvatars.map(a => ({ ...a, _type: "Stock" })),
+    ];
+
+    const avatars = allRaw.map(a => ({
       id: a.avatar_id,
-      name: a.avatar_name ?? a.avatar_id,
+      name: `${a._type === "Mis avatares" ? "⭐ " : ""}${a.avatar_name ?? a.avatar_id}`,
       preview_image: a.preview_image_url ?? null,
     }));
 
