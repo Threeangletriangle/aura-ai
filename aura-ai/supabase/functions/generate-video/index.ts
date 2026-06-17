@@ -170,10 +170,10 @@ Deno.serve(async (req: Request) => {
         },
       ],
       dimension: orientation === "vertical"
-        ? { width: 1080, height: 1920 }  // 9:16 Reels/TikTok
-        : { width: 1280, height: 720 },  // 16:9 YouTube/Facebook
+        ? { width: 1080, height: 1920 }
+        : { width: 1280, height: 720 },
       aspect_ratio: orientation === "vertical" ? "9:16" : "16:9",
-      // callback_url: se configura en HeyGen dashboard apuntando al webhook
+      callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/webhook-heygen`,
     };
 
     const heygenRes = await fetch("https://api.heygen.com/v2/video/generate", {
